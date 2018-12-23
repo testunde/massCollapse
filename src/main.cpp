@@ -15,70 +15,90 @@
 #include "Global.h"
 #include "Droplet.h"
 
-//using namespace cv;
 using namespace std;
 
-list<Droplet*> ** * environment;
-
-bool isDifferentEnvCellHeight(double height1, double height2) {
-	return floor(height1 / ENVIRONMENT_CELL_SIZE) != floor(height2 / ENVIRONMENT_CELL_SIZE);
-}
-
 void update() {
-	// condensation growth
-	for (int w = 0; w < ENVIRONMENT_CELLS_WIDTH; w++) {
-		for (int h = 0; h < ENVIRONMENT_CELLS_HEIGHT; h++) {
-			for (Droplet* drop : *environment[w][h]) {
-				drop->growCondensation();
-			}
-		}
+	// grow condensation
+	Droplet *growDrop = Droplet::bigger_h;
+	while (growDrop != nullptr) {
+		growDrop->growCondensation();
+		growDrop = growDrop->smaller;
 	}
 
 	// (plain) falling
-	for (int w = 0; w < ENVIRONMENT_CELLS_WIDTH; w++) {
-		for (int h = ENVIRONMENT_CELLS_HEIGHT - 2; h >= 0; h--) {
-			list<Droplet*> toRemove;
-			for (Droplet* drop : *environment[w][h]) {
-				double preHeight = drop->getCoord(1);
-				drop->fallBy(abs(drop->getVelocity())); // also sets pre-coord
-				if (isDifferentEnvCellHeight(preHeight, drop->getCoord(1))) {
-					toRemove.push_back(drop);
-					int hCoord = (int) floor(drop->getCoord(1) / ENVIRONMENT_CELL_SIZE);
-					hCoord = (hCoord < ENVIRONMENT_CELLS_HEIGHT) ? ((hCoord < 0) ? 0 : hCoord) : (ENVIRONMENT_CELLS_HEIGHT - 1);
-					environment[w][hCoord]->push_back(drop);
-					drop->setParentList(environment[w][hCoord]);
-				}
-			}
-			environment[w][h]->remove_if([&toRemove](Droplet *d){return find(toRemove.begin(), toRemove.end(), d) != toRemove.end();});
-		}
+	Droplet *fallDrop = Droplet::below_h;
+	while (fallDrop != nullptr) {
+		Droplet *nextFallDrop = fallDrop->above;
+		fallDrop->fallBy(fallDrop->getVelocity());
+		fallDrop = nextFallDrop;
 	}
-
-	// TODO: merging
-	// maintain "toDeleteDrops" list (to the end, just delete them will remove them from parent env lists (through deconstructor)
-	list<Droplet*> toDelete;
-	for (int w = 0; w < ENVIRONMENT_CELLS_WIDTH; w++) {
-		for (int h = 0; h <= ENVIRONMENT_CELLS_HEIGHT - 2; h++) {
-			toDelete.push_
-		}
-	}
-	for (Droplet *d : toDelete)
-		delete d;
 }
 
 void clearEnvironment() {
-	for (int w = 0; w < ENVIRONMENT_CELLS_WIDTH; w++) {
-		for (int h = 0; h < ENVIRONMENT_CELLS_HEIGHT; h++) {
-			for (Droplet *drop : *environment[w][h])
-				delete drop;
-			delete environment[w][h];
-		}
-		delete[] environment[w];
-	}
-	delete[] environment;
+	Droplet::left_h->recursiveDeleteWidthList();
 }
 
 double getRandom() {
 	return ((double) random()) / ((double) RAND_MAX);
+}
+
+void insertInListLinks(Droplet *drp) {
+	// left/right list links & tail/heads
+	Droplet *preRight = nullptr, *currentRight = Droplet::left_h;
+	while (currentRight != nullptr && currentRight->getCoord(0) < drp->getCoord(0)) {
+		preRight = currentRight;
+		currentRight = currentRight->right;
+	}
+	if (preRight == nullptr) {
+		Droplet::left_h = drp;
+	} else {
+		preRight->right = drp;
+	}
+	if (currentRight == nullptr) {
+		Droplet::right_h = drp;
+	} else {
+		currentRight->left = drp;
+	}
+	drp->right = currentRight;
+	drp->left = preRight;
+
+	// above/below list links & tail/heads
+	Droplet *preBelow = nullptr, *currentBelow = Droplet::above_h;
+	while (currentBelow != nullptr && currentBelow->getCoord(1) < drp->getCoord(1)) {
+		preBelow = currentBelow;
+		currentBelow = currentBelow->below;
+	}
+	if (preBelow == nullptr) {
+		Droplet::above_h = drp;
+	} else {
+		preBelow->below = drp;
+	}
+	if (currentBelow == nullptr) {
+		Droplet::below_h = drp;
+	} else {
+		currentBelow->above = drp;
+	}
+	drp->below = currentBelow;
+	drp->above = preBelow;
+
+	// bigger/smaller list links & tail/heads
+	Droplet *preSmaller = nullptr, *currentSmaller = Droplet::bigger_h;
+	while (currentSmaller != nullptr && currentSmaller->getRadius() > drp->getRadius()) {
+		preSmaller = currentSmaller;
+		currentSmaller = currentSmaller->smaller;
+	}
+	if (preSmaller == nullptr) {
+		Droplet::bigger_h = drp;
+	} else {
+		preSmaller->smaller = drp;
+	}
+	if (currentSmaller == nullptr) {
+		Droplet::smaller_h = drp;
+	} else {
+		currentSmaller->bigger = drp;
+	}
+	drp->smaller = currentSmaller;
+	drp->bigger = preSmaller;
 }
 
 int main(int, char**) {
@@ -87,78 +107,72 @@ int main(int, char**) {
 	default_random_engine rnd_gen;
 
 	// initialize environment
-	printf("Init env...\n");
-	environment = new list<Droplet*>**[ENVIRONMENT_CELLS_WIDTH];
-	for (int w = 0; w < ENVIRONMENT_CELLS_WIDTH; w++) {
-		environment[w] = new list<Droplet*>*[ENVIRONMENT_CELLS_HEIGHT];
-		for (int h = 0; h < ENVIRONMENT_CELLS_HEIGHT; h++) {
-			environment[w][h] = new list<Droplet*>();
-		}
-	}
+	printf("Initialize environment + generate droplets...\n");
 
 	// generate droplets
 	double tSmax = DBL_MIN, tSmin = DBL_MAX;
-	printf("Generate droplets...\n");
-	for (int w = 0; w < ENVIRONMENT_CELLS_WIDTH; w++) {
-		for (int h = 0; h < ENVIRONMENT_CELLS_SPAWN_THICKNESS; h++) {
-			for (int c = 0; c < ENVIRONMENT_SPAWN_DROPS_PER_CELL; c++) {
-				double tempCoord[] = {(((double) w) + getRandom()) * ENVIRONMENT_CELL_SIZE,
-						(((double) h) + getRandom()) * ENVIRONMENT_CELL_SIZE};
-				double tempSize = 0.;
-				while (abs(tempSize - ENVIRONMENT_SPAWN_DROP_SIZE) > ENVIRONMENT_SPAWN_DROP_SIZE_STD_2) {
-					tempSize = distribution(rnd_gen);
-				}
-
-				if (tempSize > tSmax)
-					tSmax = tempSize;
-				if (tempSize < tSmin)
-					tSmin = tempSize;
-
-				Droplet * tempDrop = new Droplet(tempSize / 2., tempCoord, environment[w][h]);
-				environment[w][h]->push_back(tempDrop);
-			}
-
+	for (int c = 0; c < ENVIRONMENT_SPAWN_DROPS_TOTAL; c++) {
+		double tempCoord[] = {getRandom() * ENVIRONMENT_WIDTH,
+				getRandom() * ENVIRONMENT_SPAWN_THICKNESS};
+		double tempSize = 0.;
+		while (abs(tempSize - ENVIRONMENT_SPAWN_DROP_SIZE) > ENVIRONMENT_SPAWN_DROP_SIZE_STD_2) {
+			tempSize = distribution(rnd_gen);
 		}
+
+		if (tempSize > tSmax)
+			tSmax = tempSize;
+		if (tempSize < tSmin)
+			tSmin = tempSize;
+
+		Droplet * tempDrop = new Droplet(tempSize / 2., tempCoord);
+		insertInListLinks(tempDrop);
 	}
-	printf("min: %f | max: %f\n", tSmin * 1.E6, tSmax * 1.E6);
+	printf("min: %f | max: %f [µm]\n", tSmin * 1.E6, tSmax * 1.E6);
 
 	// init openCV
-	int heightDivider = 10;
 	cv::namedWindow("env_simu", cv::WINDOW_AUTOSIZE);
-	cv::Mat envVisu(ENVIRONMENT_CELLS_HEIGHT / heightDivider, ENVIRONMENT_CELLS_WIDTH, CV_8UC3);
+	int visu_width = ENVIRONMENT_WIDTH * VISU_WIDTH_PX_PER_METER;
+	int visu_height = ENVIRONMENT_HEIGHT * VISU_HEIGHT_PX_PER_METER;
+	cv::Mat envVisu(visu_height, visu_width, CV_8UC3);
 
 	// simulation start
-	Droplet *statDrop = environment[0][0]->front();
-	double meanTotalMassPerCell = DENSITY_WATER * pow(ENVIRONMENT_SPAWN_DROP_SIZE * .5, 3.) * (M_PI * 4. / 3.) * ENVIRONMENT_SPAWN_DROPS_PER_CELL;
-	printf("starting simulation...\n");
+	Droplet *statDrop = Droplet::bigger_h;
+	double meanTotalMassPerPx = DENSITY_WATER * pow(ENVIRONMENT_SPAWN_DROP_SIZE * .5, 3.) * (M_PI * 4. / 3.) * ENVIRONMENT_SPAWN_DROPS_TOTAL / (visu_width * visu_height);
+	printf("starting simulation... (meanTotalMassPerPx/biggestMass = %f)\n", meanTotalMassPerPx/Droplet::bigger_h->getMass());
 	for (int t = 0; t <= SIMULATION_TIME_MAX; t++) {
 		update();
 
 		if (t % SIMULATION_TIME_STATS_UPDATE == 0) {
-			printf("time: %d [s] | drop size: %f [mm] | velocity: %f [cm/s] | height: %f [m]\n", t, statDrop->getRadius() * 2. * 1000., statDrop->getVelocity() * 100., statDrop->getCoord(1));
-			fflush(stdout);
+			// count mass per pixel
+			double total_mass[visu_width][visu_height] = {0.};
+			Droplet *currentDrop = Droplet::left_h;
+			while (currentDrop != nullptr) {
+				int idx[2] = {(int) (currentDrop->getCoord(0) * VISU_WIDTH_PX_PER_METER), (int) (currentDrop->getCoord(1) * VISU_HEIGHT_PX_PER_METER)};
+				total_mass[idx[0]][(idx[1] > visu_height) ? visu_height : idx[1]] += currentDrop->getMass();
+
+				currentDrop = currentDrop->right;
+			}
 
 			// visualization
-			for (int w = 0; w < ENVIRONMENT_CELLS_WIDTH; w++) {
-				for (int h = 0; h < ENVIRONMENT_CELLS_HEIGHT / heightDivider; h++) {
-					int dropCount = 0;
-					double totalMass = .0;
-					for (int c = 0; c < heightDivider; c++) {
-						dropCount += environment[w][h * heightDivider + c]->size();
-						for (Droplet *d : *environment[w][h * heightDivider + c]) {
-							totalMass += d->getMass();
-						}
-					}
+			double avgColor = 0.;
+			for (int w = 0; w < visu_width; w++) {
+				for (int h = 0; h < visu_height; h++) {
 					// TODO: insert color variations depending on avgRadius distribution
-					int color = (int) (.5 * 255. * ((double) dropCount) / (double) (ENVIRONMENT_SPAWN_DROPS_PER_CELL * heightDivider));
-					int colorMass = (int) (.5 * 255. * totalMass / (meanTotalMassPerCell * (double) heightDivider));
+					double massRatio = total_mass[w][h] / Droplet::bigger_h->getMass();
+					double scaledRatio = (log10(massRatio + 0.1) + 1) / (log10(1.1) + 1);
+					int colorMass = (int) (.5 * 255. * scaledRatio);//meanTotalMassPerPx);
 					int colorFinal = (colorMass > 255) ? 255 : colorMass;
 					envVisu.at<cv::Vec3b>(h, w) = cv::Vec3b(colorFinal, colorFinal, colorFinal);
+					avgColor += colorFinal;
 				}
 			}
+			avgColor /= visu_width * visu_height;
 			cv::imshow("env_simu", envVisu);
 			if (cv::waitKey(30) >= 0)
 				break;
+
+			printf("time: %d [s] | drop size: %f [mm] | velocity: %f [cm/s] | height: %f [m] | avgColor: %f [0-256[\n", t, statDrop->getRadius() * 2. * 1000., statDrop->getVelocity() * 100., statDrop->getCoord(1), avgColor);
+			fflush(stdout);
 		}
 	}
 

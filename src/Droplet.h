@@ -21,15 +21,23 @@ private:
 	double mass; // [kg]
 	double velocity; // [m/s]
 	Droplet *mergedInto = nullptr;
-	std::list<Droplet*> *parentList = nullptr;
 
 	double updateMass();
 	double updateVelocity();
 public:
 	static int mergeCount;
 
-	Droplet(double radius, double coord[], std::list<Droplet*> *list);
+	static Droplet *bigger_h, *smaller_h; // head, tail
+	static Droplet *above_h, *below_h; // head, tail
+	static Droplet *left_h, *right_h; // head, tail
+
+	Droplet *bigger = nullptr, *smaller = nullptr; // head, tail
+	Droplet *above = nullptr, *below = nullptr; // head, tail
+	Droplet *left = nullptr, *right = nullptr; // head, tail
+
+	Droplet(double radius, double coord[]);
 	virtual ~Droplet();
+	void recursiveDeleteWidthList();
 
 	double getRadius();
 	double getCoord(int axis);
@@ -39,12 +47,9 @@ public:
 	Droplet *getFinalMergred();
 
 	double growCondensation();
-	void merge(Droplet *drp);
+	void merge(std::list<Droplet*> &list);
 	void fallBy(double way);
-	void setMerged(Droplet *drp);
-	void setParentList(std::list<Droplet*> *list);
-
-	bool isInXRangeWith(Droplet *dropOther);
+	void setMergedInto(Droplet *drp);
 };
 
 #endif /* DROPLET_H_ */
