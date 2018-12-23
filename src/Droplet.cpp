@@ -12,6 +12,7 @@
 using namespace std;
 
 int Droplet::mergeCount = 0;
+list<Droplet*> * Droplet::dropList = new list<Droplet*>();
 
 Droplet *Droplet::bigger_h = nullptr; // head
 Droplet *Droplet::smaller_h = nullptr; // tail
@@ -71,6 +72,55 @@ void Droplet::recursiveDeleteWidthList() {
 		this->right->recursiveDeleteWidthList();
 	delete this;
 }
+
+void Droplet::sortListWidth() {
+	dropList->sort([](Droplet *a, Droplet *b) {
+		return a->getCoord(0) < b->getCoord(0);
+	});
+	Droplet *preDrop = nullptr;
+	for (Droplet *d : *dropList) {
+		d->left = preDrop;
+		if (preDrop != nullptr)
+			preDrop->right = d;
+		else
+			Droplet::left_h = d;
+		preDrop = d;
+	}
+	Droplet::right_h = preDrop;
+}
+
+void Droplet::sortListHeight() {
+	dropList->sort([](Droplet *a, Droplet *b) {
+		return a->getCoord(1) < b->getCoord(1);
+	});
+	Droplet *preDrop = nullptr;
+	for (Droplet *d : *dropList) {
+		d->above = preDrop;
+		if (preDrop != nullptr)
+			preDrop->below = d;
+		else
+			Droplet::above_h = d;
+		preDrop = d;
+	}
+	Droplet::below_h = preDrop;
+}
+
+void Droplet::sortListSize() {
+	dropList->sort([](Droplet *a, Droplet *b) {
+		return a->getRadius() > b->getRadius();
+	});
+	Droplet *preDrop = nullptr;
+	for (Droplet *d : *dropList) {
+		d->bigger = preDrop;
+		if (preDrop != nullptr)
+			preDrop->smaller = d;
+		else
+			Droplet::bigger_h = d;
+		preDrop = d;
+	}
+	Droplet::smaller_h = preDrop;
+}
+
 
 double Droplet::updateMass() {
 	this->mass = DENSITY_WATER * pow(this->radius, 3.) * (M_PI * 4. / 3.);

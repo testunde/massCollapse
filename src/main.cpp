@@ -32,6 +32,7 @@ void update() {
 		fallDrop->fallBy(fallDrop->getVelocity());
 		fallDrop = nextFallDrop;
 	}
+//	Droplet::sortListHeight();
 }
 
 void clearEnvironment() {
@@ -40,58 +41,6 @@ void clearEnvironment() {
 
 double getRandom() {
 	return ((double) random()) / ((double) RAND_MAX);
-}
-
-void insertInListLinksSort(list<Droplet*> *list) {
-	printf("width");
-	list->sort([](Droplet *a, Droplet *b) {
-		return a->getCoord(0) < b->getCoord(0);
-	});
-	printf(".");
-	Droplet *preDrop = nullptr;
-	for (Droplet *d : *list) {
-		d->left = preDrop;
-		if (preDrop != nullptr)
-			preDrop->right = d;
-		else
-			Droplet::left_h = d;
-		preDrop = d;
-	}
-	Droplet::right_h = preDrop;
-
-	printf(" | height");
-	list->sort([](Droplet *a, Droplet *b) {
-		return a->getCoord(1) < b->getCoord(1);
-	});
-	printf(".");
-	preDrop = nullptr;
-	for (Droplet *d : *list) {
-		d->above = preDrop;
-		if (preDrop != nullptr)
-			preDrop->below = d;
-		else
-			Droplet::above_h = d;
-		preDrop = d;
-	}
-	Droplet::below_h = preDrop;
-
-	printf(" | size");
-	list->sort([](Droplet *a, Droplet *b) {
-		return a->getRadius() > b->getRadius();
-	});
-	printf(".");
-	preDrop = nullptr;
-	for (Droplet *d : *list) {
-		d->bigger = preDrop;
-		if (preDrop != nullptr)
-			preDrop->smaller = d;
-		else
-			Droplet::bigger_h = d;
-		preDrop = d;
-	}
-	Droplet::smaller_h = preDrop;
-
-	printf(" ...done\n");
 }
 
 int main(int, char**) {
@@ -103,7 +52,6 @@ int main(int, char**) {
 	printf("Initialize environment + generate droplets...\n");
 
 	// generate droplets
-	list<Droplet*> *dropList = new list<Droplet*>();
 	int dCount = 0;
 	double tSmax = DBL_MIN, tSmin = DBL_MAX;
 	for (int c = 0; c < ENVIRONMENT_SPAWN_DROPS_TOTAL; c++) {
@@ -120,7 +68,7 @@ int main(int, char**) {
 			tSmin = tempSize;
 
 		Droplet * tempDrop = new Droplet(tempSize / 2., tempCoord);
-		dropList->push_back(tempDrop);
+		Droplet::dropList->push_back(tempDrop);
 
 		dCount++;
 		if (dCount % 100 == 0) {
@@ -130,8 +78,9 @@ int main(int, char**) {
 	}
 	printf("min: %f | max: %f [µm]\n", tSmin * 1.E6, tSmax * 1.E6);
 	printf("Sorting...\n");
-	insertInListLinksSort(dropList);
-	delete dropList;
+	Droplet::sortListWidth();
+	Droplet::sortListHeight();
+	Droplet::sortListSize();
 
 	// init openCV
 	cv::namedWindow("env_simu", cv::WINDOW_AUTOSIZE);

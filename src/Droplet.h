@@ -26,6 +26,11 @@ private:
 	double updateVelocity();
 public:
 	static int mergeCount;
+	static std::list<Droplet*> *dropList;
+
+	static void sortListWidth();
+	static void sortListHeight();
+	static void sortListSize();
 
 	static Droplet *bigger_h, *smaller_h; // head, tail
 	static Droplet *above_h, *below_h; // head, tail
