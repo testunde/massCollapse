@@ -42,63 +42,56 @@ double getRandom() {
 	return ((double) random()) / ((double) RAND_MAX);
 }
 
-void insertInListLinks(Droplet *drp) {
-	// left/right list links & tail/heads
-	Droplet *preRight = nullptr, *currentRight = Droplet::left_h;
-	while (currentRight != nullptr && currentRight->getCoord(0) < drp->getCoord(0)) {
-		preRight = currentRight;
-		currentRight = currentRight->right;
+void insertInListLinksSort(list<Droplet*> *list) {
+	printf("width");
+	list->sort([](Droplet *a, Droplet *b) {
+		return a->getCoord(0) < b->getCoord(0);
+	});
+	printf(".");
+	Droplet *preDrop = nullptr;
+	for (Droplet *d : *list) {
+		d->left = preDrop;
+		if (preDrop != nullptr)
+			preDrop->right = d;
+		else
+			Droplet::left_h = d;
+		preDrop = d;
 	}
-	if (preRight == nullptr) {
-		Droplet::left_h = drp;
-	} else {
-		preRight->right = drp;
-	}
-	if (currentRight == nullptr) {
-		Droplet::right_h = drp;
-	} else {
-		currentRight->left = drp;
-	}
-	drp->right = currentRight;
-	drp->left = preRight;
+	Droplet::right_h = preDrop;
 
-	// above/below list links & tail/heads
-	Droplet *preBelow = nullptr, *currentBelow = Droplet::above_h;
-	while (currentBelow != nullptr && currentBelow->getCoord(1) < drp->getCoord(1)) {
-		preBelow = currentBelow;
-		currentBelow = currentBelow->below;
+	printf(" | height");
+	list->sort([](Droplet *a, Droplet *b) {
+		return a->getCoord(1) < b->getCoord(1);
+	});
+	printf(".");
+	preDrop = nullptr;
+	for (Droplet *d : *list) {
+		d->above = preDrop;
+		if (preDrop != nullptr)
+			preDrop->below = d;
+		else
+			Droplet::above_h = d;
+		preDrop = d;
 	}
-	if (preBelow == nullptr) {
-		Droplet::above_h = drp;
-	} else {
-		preBelow->below = drp;
-	}
-	if (currentBelow == nullptr) {
-		Droplet::below_h = drp;
-	} else {
-		currentBelow->above = drp;
-	}
-	drp->below = currentBelow;
-	drp->above = preBelow;
+	Droplet::below_h = preDrop;
 
-	// bigger/smaller list links & tail/heads
-	Droplet *preSmaller = nullptr, *currentSmaller = Droplet::bigger_h;
-	while (currentSmaller != nullptr && currentSmaller->getRadius() > drp->getRadius()) {
-		preSmaller = currentSmaller;
-		currentSmaller = currentSmaller->smaller;
+	printf(" | size");
+	list->sort([](Droplet *a, Droplet *b) {
+		return a->getRadius() > b->getRadius();
+	});
+	printf(".");
+	preDrop = nullptr;
+	for (Droplet *d : *list) {
+		d->bigger = preDrop;
+		if (preDrop != nullptr)
+			preDrop->smaller = d;
+		else
+			Droplet::bigger_h = d;
+		preDrop = d;
 	}
-	if (preSmaller == nullptr) {
-		Droplet::bigger_h = drp;
-	} else {
-		preSmaller->smaller = drp;
-	}
-	if (currentSmaller == nullptr) {
-		Droplet::smaller_h = drp;
-	} else {
-		currentSmaller->bigger = drp;
-	}
-	drp->smaller = currentSmaller;
-	drp->bigger = preSmaller;
+	Droplet::smaller_h = preDrop;
+
+	printf(" ...done\n");
 }
 
 int main(int, char**) {
@@ -110,6 +103,8 @@ int main(int, char**) {
 	printf("Initialize environment + generate droplets...\n");
 
 	// generate droplets
+	list<Droplet*> *dropList = new list<Droplet*>();
+	int dCount = 0;
 	double tSmax = DBL_MIN, tSmin = DBL_MAX;
 	for (int c = 0; c < ENVIRONMENT_SPAWN_DROPS_TOTAL; c++) {
 		double tempCoord[] = {getRandom() * ENVIRONMENT_WIDTH,
@@ -125,9 +120,18 @@ int main(int, char**) {
 			tSmin = tempSize;
 
 		Droplet * tempDrop = new Droplet(tempSize / 2., tempCoord);
-		insertInListLinks(tempDrop);
+		dropList->push_back(tempDrop);
+
+		dCount++;
+		if (dCount % 100 == 0) {
+			printf("%.4f%%\r", 100. * dCount / ENVIRONMENT_SPAWN_DROPS_TOTAL);
+			fflush(stdout);
+		}
 	}
 	printf("min: %f | max: %f [µm]\n", tSmin * 1.E6, tSmax * 1.E6);
+	printf("Sorting...\n");
+	insertInListLinksSort(dropList);
+	delete dropList;
 
 	// init openCV
 	cv::namedWindow("env_simu", cv::WINDOW_AUTOSIZE);
@@ -171,6 +175,7 @@ int main(int, char**) {
 			if (cv::waitKey(30) >= 0)
 				break;
 
+			// TODO: insert "remaining drop-count"
 			printf("time: %d [s] | drop size: %f [mm] | velocity: %f [cm/s] | height: %f [m] | avgColor: %f [0-256[\n", t, statDrop->getRadius() * 2. * 1000., statDrop->getVelocity() * 100., statDrop->getCoord(1), avgColor);
 			fflush(stdout);
 		}
