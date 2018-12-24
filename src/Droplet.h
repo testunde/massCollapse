@@ -52,7 +52,7 @@ public:
 	Droplet *getFinalMergred();
 
 	double growCondensation();
-	void merge(std::list<Droplet*> &list);
+	void merge(std::list<Droplet*> *list);
 	void fallBy(double way);
 	void setMergedInto(Droplet *drp);
 };

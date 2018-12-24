@@ -6,6 +6,7 @@
  */
 
 #include <cstring>
+#include <stdio.h>
 
 #include "Droplet.h"
 
@@ -63,6 +64,8 @@ Droplet::~Droplet() {
 		left->right = this->right;
 	if (right != nullptr)
 		right->left = this->left;
+
+	dropList->remove(this);
 }
 
 // CALL IT ONCE AND LAST, IF CREATED WITH "new"!!!
@@ -156,11 +159,14 @@ double Droplet::growCondensation() {
 	return dR;
 }
 
-void Droplet::merge(list<Droplet *> &list) {
+void Droplet::merge(list<Droplet *> *list) {
+	if (list->empty())
+		return;
+
 	double totalMass = this->mass;
 
 	double newCoord[] = {this->coord[0] * this->mass, this->coord[1]}; // no height-change as approximation
-	for (Droplet * drp : list) {
+	for (Droplet * drp : *list) {
 		totalMass += drp->getMass();
 		newCoord[0] += drp->getCoord(0) * drp->getMass();
 
@@ -171,46 +177,20 @@ void Droplet::merge(list<Droplet *> &list) {
 
 	memcpy(this->coord, newCoord, 2 * sizeof(double));
 	this->mass = totalMass;
-	this->radius = this->mass / pow(DENSITY_WATER * (M_PI * 4. / 3.), 1./3.);
+	this->radius = pow(this->mass / (DENSITY_WATER * (M_PI * 4. / 3.)), 1./3.);
+	double tempVel = this->velocity;
 	updateVelocity();
+	if (this->velocity < tempVel)
+		printf("lower vel?!\n");
 
-	for (Droplet * drp : list) {
+	for (Droplet * drp : *list) {
 		delete drp; // for later faster&easier link updates
 	}
-	// TODO: update width list links
-	// TODO: update size list links
 }
 
 void Droplet::fallBy(double way) {
 	memcpy(this->coordPre, this->coord, 2 * sizeof(double));
 	this->coord[1] += way; // [m]
-
-	// Update height height-list links.
-	// No need to check droplets above 'this' when beginning from bottom and fall-way is positive.
-
-	Droplet *aboveDrop = this->above, *belowDrop = this->below;
-	while (belowDrop != nullptr && belowDrop->getCoord(1) < this->coord[1]) {
-		aboveDrop = belowDrop;
-		belowDrop = belowDrop->below;
-	}
-	if (aboveDrop == this->above)
-		return; // no change, even if 'this->above' was 'nullptr'
-
-	// change pointers from new-neighbors to 'this'
-	if (belowDrop != nullptr) {
-		belowDrop->above = this;
-	}
-	aboveDrop->below = this;
-
-	// change pointers from prior-neighbors which pointed to 'this'
-	if (this->above != nullptr)
-		this->above->below = this->below;
-	if (this->below != nullptr)
-		this->below->above = this->above;
-
-	// change 'this' to new-neighbors
-	this->above = aboveDrop;
-	this->below = belowDrop;
 }
 
 void Droplet::setMergedInto(Droplet *drp) {
