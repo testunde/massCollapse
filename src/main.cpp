@@ -38,7 +38,7 @@ void update() {
 		fallDrop->fallBy(fallDrop->getVelocity());
 		Droplet *nextDrop = fallDrop->above;
 		if (fallDrop->getCoordPre(1) >= ENVIRONMENT_HEIGHT)
-			delete fallDrop;
+			fallDrop->deleteInstance();
 
 		fallDrop = nextDrop;
 	}
@@ -90,8 +90,19 @@ void update() {
 }
 
 void clearEnvironment() {
-	if (Droplet::left_h != nullptr)
-		Droplet::left_h->recursiveDeleteWidthList();
+	printf("Clearing environment...\n");
+	fflush(stdout);
+	for (Droplet * d: *Droplet::dropList) {
+		delete d;
+	}
+	Droplet::dropList->clear();
+
+	Droplet::bigger_h = nullptr; // head
+	Droplet::smaller_h = nullptr; // tail
+	Droplet::above_h = nullptr; // head
+	Droplet::below_h = nullptr; // tail
+	Droplet::left_h = nullptr; // head
+	Droplet::right_h = nullptr; // tail
 }
 
 double getRandom() {
@@ -142,6 +153,7 @@ int main(int, char**) {
 	int visu_width = ENVIRONMENT_WIDTH * VISU_WIDTH_PX_PER_METER;
 	int visu_height = ENVIRONMENT_HEIGHT * VISU_HEIGHT_PX_PER_METER;
 	cv::Mat envVisu(visu_height, visu_width, CV_8UC3);
+	cv::VideoWriter video(VISU_VIDEO_FILENAME, cv::VideoWriter::fourcc(VISU_VIDEO_FORMAT), 10, cv::Size(visu_width, visu_height));
 
 	// simulation start
 	double meanTotalMassPerPx = DENSITY_WATER * pow(ENVIRONMENT_SPAWN_DROP_SIZE * .5, 3.) * (M_PI * 4. / 3.) * ENVIRONMENT_SPAWN_DROPS_TOTAL / (visu_width * visu_height);
@@ -159,11 +171,17 @@ int main(int, char**) {
 			double total_mass[visu_width][visu_height] = {0.};
 			double max_mass[visu_width][visu_height] = {0.};
 			bool contain_drop[visu_width][visu_height] = {false};
+			// reset first column (weird bug?! because it contains the values of the prior visualization step even with init=0.)
+			for (int h = 0; h < visu_height; h++) {
+				total_mass[0][h] = 0.;
+				max_mass[0][h] = 0.;
+				contain_drop[0][h] = false;
+			}
 			double avgSize = 0.;
 			Droplet *currentDrop = Droplet::left_h;
 			while (currentDrop != nullptr) {
 				int idx[2] = {(int) (currentDrop->getCoord(0) * VISU_WIDTH_PX_PER_METER), (int) (currentDrop->getCoord(1) * VISU_HEIGHT_PX_PER_METER)};
-				idx[1] = (idx[1] > visu_height) ? visu_height : idx[1];
+				idx[1] = (idx[1] >= visu_height) ? (visu_height - 1) : idx[1];
 				total_mass[idx[0]][idx[1]] += currentDrop->getMass();
 				max_mass[idx[0]][idx[1]] = max(max_mass[idx[0]][idx[1]], currentDrop->getMass());
 				contain_drop[idx[0]][idx[1]] = true;
@@ -172,9 +190,10 @@ int main(int, char**) {
 
 				currentDrop = currentDrop->right;
 			}
-			avgSize *= 2. / (double) (ENVIRONMENT_SPAWN_DROPS_TOTAL - Droplet::disposedDrops);
+			avgSize *= 2. / (double) Droplet::remainingDrops();
 
 			// visualization
+			envVisu.setTo(cv::Scalar(0, 0, 0));
 			double avgColor = 0.;
 			for (int w = 0; w < visu_width; w++) {
 				for (int h = 0; h < visu_height; h++) {
@@ -198,6 +217,8 @@ int main(int, char**) {
 			}
 			avgColor /= visu_width * visu_height;
 
+
+			video.write(envVisu);
 			cv::imshow("env_simu", envVisu);
 			if (cv::waitKey(30) >= 0)
 				break;
@@ -205,12 +226,13 @@ int main(int, char**) {
 			long currentTimeStamp = currentMicroSec();
 			long eta_seconds = (long) ((SIMULATION_TIME_MAX - (long) t) * (currentTimeStamp - startTimeStamp) / (1E6L * (long) t));
 			printf("time: %d [s] | avg drop size: %f [mm] | avgColor: %f [0-256[ | remaining drops: %d | lowest height: %f [m] (ETA: %ldm %lds)\n",
-					t, avgSize, avgColor, ((int) ENVIRONMENT_SPAWN_DROPS_TOTAL) - Droplet::disposedDrops, ENVIRONMENT_HEIGHT - Droplet::below_h->getCoord(1),
+					t, avgSize, avgColor, Droplet::remainingDrops(), (Droplet::below_h == nullptr) ? -1 : (ENVIRONMENT_HEIGHT - Droplet::below_h->getCoord(1)),
 					eta_seconds / 60, eta_seconds % 60);
 			fflush(stdout);
 		}
 	}
 
 	// clear simulation environment
+	video.release();
 	clearEnvironment();
 }

@@ -32,6 +32,10 @@ Droplet::Droplet(double radius, double coord[2]) {
 }
 
 Droplet::~Droplet() {
+}
+
+// CALL IT ONCE AND LAST, IF CREATED WITH "new"!!!
+void Droplet::deleteInstance() {
 	// update list heads
 	if (bigger_h == this)
 		bigger_h = this->smaller;
@@ -68,13 +72,7 @@ Droplet::~Droplet() {
 	dropList->remove(this);
 
 	disposedDrops++;
-}
 
-// CALL IT ONCE AND LAST, IF CREATED WITH "new"!!!
-void Droplet::recursiveDeleteWidthList() {
-	// going towards tail using width-list links
-	if (this->right != nullptr)
-		this->right->recursiveDeleteWidthList();
 	delete this;
 }
 
@@ -130,6 +128,10 @@ void Droplet::sortListSize() {
 	if (preDrop != nullptr)
 			preDrop->smaller = nullptr;
 	Droplet::smaller_h = preDrop;
+}
+
+int Droplet::remainingDrops() {
+	return ENVIRONMENT_SPAWN_DROPS_TOTAL - disposedDrops;
 }
 
 
@@ -191,7 +193,7 @@ void Droplet::merge(list<Droplet *> *list) {
 		printf("lower vel?!\n");
 
 	for (Droplet * drp : *list) {
-		delete drp; // delete now for later faster&easier link updates
+		drp->deleteInstance(); // delete now for later faster&easier link updates
 	}
 }
 

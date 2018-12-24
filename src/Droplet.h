@@ -32,6 +32,8 @@ public:
 	static void sortListHeight();
 	static void sortListSize();
 
+	static int remainingDrops();
+
 	static Droplet *bigger_h, *smaller_h; // head, tail
 	static Droplet *above_h, *below_h; // head, tail
 	static Droplet *left_h, *right_h; // head, tail
@@ -45,7 +47,7 @@ public:
 
 	Droplet(double radius, double coord[]);
 	virtual ~Droplet();
-	void recursiveDeleteWidthList();
+	void deleteInstance();
 
 	double getRadius();
 	double getCoord(int axis);
