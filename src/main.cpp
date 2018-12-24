@@ -230,8 +230,8 @@ int main(int, char**) {
 
 			long currentTimeStamp = currentMicroSec();
 			long eta_seconds = (long) ((SIMULATION_TIME_MAX - (long) t) * (currentTimeStamp - startTimeStamp) / (1E6L * (long) t));
-			printf("time: %d [s] | avg drop size: %f [mm] | avgColor: %f [0-256[ | remaining drops: %d | lowest height: %f [m] (ETA: %ldm %lds)\n",
-					t, avgSize, avgColor, Droplet::remainingDrops(), (Droplet::below_h == nullptr) ? -1 : (ENVIRONMENT_HEIGHT - Droplet::below_h->getCoord(1)),
+			printf("time: %d [s] | drop size (avg/max): %f/%f [mm] | avgColor: %f [0-256[ | remaining drops: %d | lowest height: %f [m] (ETA: %ldm %lds)\n",
+					t, avgSize, Droplet::bigger_h->getRadius() * 2. * 1.E3, avgColor, Droplet::remainingDrops(), (Droplet::below_h == nullptr) ? -1 : (ENVIRONMENT_HEIGHT - Droplet::below_h->getCoord(1)),
 					eta_seconds / 60, eta_seconds % 60);
 			fflush(stdout);
 		}
