@@ -49,26 +49,31 @@ void update() {
 	while (mergeDrop != nullptr) {
 		list<Droplet*> potentialDrps;
 
-		// to the left
-		Droplet *tempDrop = mergeDrop->left;
-		double bound = mergeDrop->getCoord(0) - 2. * mergeDrop->getRadius();
-		while (tempDrop != nullptr && (tempDrop->getCoord(0) >= bound)) {
+		// above
+		Droplet *tempDrop = mergeDrop->above;
+		double bound = mergeDrop->getCoordPre(1) - 2. * mergeDrop->getRadius();
+		while (tempDrop != nullptr && (tempDrop->getCoord(1) >= bound)) {
 			potentialDrps.push_back(tempDrop);
-			tempDrop = tempDrop->left;
+			tempDrop = tempDrop->above;
 		}
 
-		// to the right
-		tempDrop = mergeDrop->right;
-		bound = mergeDrop->getCoord(0) + 2. * mergeDrop->getRadius();
-		while (tempDrop != nullptr && (tempDrop->getCoord(0) <= bound)) {
+		// below
+		tempDrop = mergeDrop->below;
+		bound = mergeDrop->getCoord(1) + 2. * mergeDrop->getRadius();
+		while (tempDrop != nullptr && (tempDrop->getCoordPre(1) <= bound)) {
 			potentialDrps.push_back(tempDrop);
-			tempDrop = tempDrop->right;
+			tempDrop = tempDrop->below;
 		}
 
 		// calculate closest distance within the last time step between mergeDrop and potential drops
 		list<Droplet*> toMerge;
 		double mD_velo = mergeDrop->getCoord(1) - mergeDrop->getCoordPre(1); // [m/2] assuming only height change and always falling down (+)
+		double widthBound[2] = {mergeDrop->getCoord(0) - 2. * mergeDrop->getRadius(), mergeDrop->getCoord(0) + 2. * mergeDrop->getRadius()};
 		for (Droplet *d : potentialDrps) {
+			// check if drop even in horizontal range
+			if ((d->getCoord(0) < widthBound[0]) || (d->getCoord(0) > widthBound[1]))
+				continue;
+
 			double d_velo = d->getCoord(1) - d->getCoordPre(1); // [m/2]
 			double timeClosest = (mergeDrop->getCoordPre(1) - d->getCoordPre(1)) /
 					(d_velo - mD_velo); // [s]
@@ -190,7 +195,7 @@ int main(int, char**) {
 
 				currentDrop = currentDrop->right;
 			}
-			avgSize *= 2. / (double) Droplet::remainingDrops();
+			avgSize *= 2. * 1.E3 / (double) Droplet::remainingDrops();
 
 			// visualization
 			envVisu.setTo(cv::Scalar(0, 0, 0));
