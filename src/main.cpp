@@ -17,6 +17,12 @@
 
 using namespace std;
 
+long currentMicroSec() {
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return t.tv_sec * 1E6L + t.tv_nsec / 1E3L;
+}
+
 void update() {
 	// grow condensation
 	Droplet *growDrop = Droplet::bigger_h;
@@ -26,10 +32,15 @@ void update() {
 	}
 
 	// (plain) falling
+
 	Droplet *fallDrop = Droplet::below_h; // it does not matter which dimension
 	while (fallDrop != nullptr) {
 		fallDrop->fallBy(fallDrop->getVelocity());
-		fallDrop = fallDrop->above;;
+		Droplet *nextDrop = fallDrop->above;
+		if (fallDrop->getCoordPre(1) >= ENVIRONMENT_HEIGHT)
+			delete fallDrop;
+
+		fallDrop = nextDrop;
 	}
 	Droplet::sortListHeight();
 
@@ -79,7 +90,8 @@ void update() {
 }
 
 void clearEnvironment() {
-	Droplet::left_h->recursiveDeleteWidthList();
+	if (Droplet::left_h != nullptr)
+		Droplet::left_h->recursiveDeleteWidthList();
 }
 
 double getRandom() {
@@ -114,8 +126,8 @@ int main(int, char**) {
 		Droplet::dropList->push_back(tempDrop);
 
 		dCount++;
-		if (dCount % 100 == 0) {
-			printf("%.4f%%\r", 100. * dCount / ENVIRONMENT_SPAWN_DROPS_TOTAL);
+		if (dCount % ((int) ENVIRONMENT_SPAWN_DROPS_TOTAL / 10) == 0) {
+			printf("%.0f%%\r", 100. * dCount / ENVIRONMENT_SPAWN_DROPS_TOTAL);
 			fflush(stdout);
 		}
 	}
@@ -134,8 +146,13 @@ int main(int, char**) {
 	// simulation start
 	double meanTotalMassPerPx = DENSITY_WATER * pow(ENVIRONMENT_SPAWN_DROP_SIZE * .5, 3.) * (M_PI * 4. / 3.) * ENVIRONMENT_SPAWN_DROPS_TOTAL / (visu_width * visu_height);
 	printf("starting simulation... (meanTotalMassPerPx/biggestDropMass = %f)\n", meanTotalMassPerPx/Droplet::bigger_h->getMass());
+	long startTimeStamp = currentMicroSec();
 	for (int t = 0; t <= SIMULATION_TIME_MAX; t++) {
 		update();
+		if (Droplet::disposedDrops >= ENVIRONMENT_SPAWN_DROPS_TOTAL) {
+			printf("No drops remaining. Exiting...\n");
+			break;
+		}
 
 		if (t % SIMULATION_TIME_STATS_UPDATE == 0) {
 			// count mass per pixel
@@ -155,7 +172,7 @@ int main(int, char**) {
 
 				currentDrop = currentDrop->right;
 			}
-			avgSize *= 2. / (double) (ENVIRONMENT_SPAWN_DROPS_TOTAL - Droplet::mergeCount);
+			avgSize *= 2. / (double) (ENVIRONMENT_SPAWN_DROPS_TOTAL - Droplet::disposedDrops);
 
 			// visualization
 			double avgColor = 0.;
@@ -185,8 +202,11 @@ int main(int, char**) {
 			if (cv::waitKey(30) >= 0)
 				break;
 
-			printf("time: %d [s] | avg drop size: %f [mm] | avgColor: %f [0-256[ | remaining drops: %d | lowest height: %f [m]\n",
-					t, avgSize, avgColor, ((int) ENVIRONMENT_SPAWN_DROPS_TOTAL) - Droplet::mergeCount, ENVIRONMENT_HEIGHT - Droplet::below_h->getCoord(1));
+			long currentTimeStamp = currentMicroSec();
+			long eta_seconds = (long) ((SIMULATION_TIME_MAX - (long) t) * (currentTimeStamp - startTimeStamp) / (1E6L * (long) t));
+			printf("time: %d [s] | avg drop size: %f [mm] | avgColor: %f [0-256[ | remaining drops: %d | lowest height: %f [m] (ETA: %ldm %lds)\n",
+					t, avgSize, avgColor, ((int) ENVIRONMENT_SPAWN_DROPS_TOTAL) - Droplet::disposedDrops, ENVIRONMENT_HEIGHT - Droplet::below_h->getCoord(1),
+					eta_seconds / 60, eta_seconds % 60);
 			fflush(stdout);
 		}
 	}

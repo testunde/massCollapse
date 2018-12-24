@@ -12,7 +12,7 @@
 
 using namespace std;
 
-int Droplet::mergeCount = 0;
+int Droplet::disposedDrops = 0;
 list<Droplet*> * Droplet::dropList = new list<Droplet*>();
 
 Droplet *Droplet::bigger_h = nullptr; // head
@@ -56,9 +56,9 @@ Droplet::~Droplet() {
 		smaller->bigger = this->bigger;
 
 	if (above != nullptr)
-		above->below = this->below;
+		above->setBelow(this->below);
 	if (below != nullptr)
-		below->above = this->above;
+		below->setAbove(this->above);
 
 	if (left != nullptr)
 		left->right = this->right;
@@ -66,6 +66,8 @@ Droplet::~Droplet() {
 		right->left = this->left;
 
 	dropList->remove(this);
+
+	disposedDrops++;
 }
 
 // CALL IT ONCE AND LAST, IF CREATED WITH "new"!!!
@@ -89,6 +91,8 @@ void Droplet::sortListWidth() {
 			Droplet::left_h = d;
 		preDrop = d;
 	}
+	if (preDrop != nullptr)
+			preDrop->right = nullptr;
 	Droplet::right_h = preDrop;
 }
 
@@ -98,13 +102,15 @@ void Droplet::sortListHeight() {
 	});
 	Droplet *preDrop = nullptr;
 	for (Droplet *d : *dropList) {
-		d->above = preDrop;
+		d->setAbove(preDrop);
 		if (preDrop != nullptr)
-			preDrop->below = d;
+			preDrop->setBelow(d);
 		else
 			Droplet::above_h = d;
 		preDrop = d;
 	}
+	if (preDrop != nullptr)
+		preDrop->below = nullptr;
 	Droplet::below_h = preDrop;
 }
 
@@ -121,6 +127,8 @@ void Droplet::sortListSize() {
 			Droplet::bigger_h = d;
 		preDrop = d;
 	}
+	if (preDrop != nullptr)
+			preDrop->smaller = nullptr;
 	Droplet::smaller_h = preDrop;
 }
 
@@ -171,7 +179,6 @@ void Droplet::merge(list<Droplet *> *list) {
 		newCoord[0] += drp->getCoord(0) * drp->getMass();
 
 		drp->setMergedInto(this);
-		mergeCount++;
 	}
 	newCoord[0] /= totalMass;
 
@@ -184,7 +191,7 @@ void Droplet::merge(list<Droplet *> *list) {
 		printf("lower vel?!\n");
 
 	for (Droplet * drp : *list) {
-		delete drp; // for later faster&easier link updates
+		delete drp; // delete now for later faster&easier link updates
 	}
 }
 
@@ -222,4 +229,16 @@ Droplet *Droplet::getFinalMergred() {
 		return this->mergedInto->getFinalMergred();
 	else
 		return this;
+}
+
+void Droplet::setAbove(Droplet * drp) {
+	if (this == drp)
+		return;
+	this->above = drp;
+}
+
+void Droplet::setBelow(Droplet * drp) {
+	if (this == drp)
+		return;
+	this->below = drp;
 }

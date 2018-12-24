@@ -25,7 +25,7 @@ private:
 	double updateMass();
 	double updateVelocity();
 public:
-	static int mergeCount;
+	static int disposedDrops;
 	static std::list<Droplet*> *dropList;
 
 	static void sortListWidth();
@@ -39,6 +39,9 @@ public:
 	Droplet *bigger = nullptr, *smaller = nullptr; // head, tail
 	Droplet *above = nullptr, *below = nullptr; // head, tail
 	Droplet *left = nullptr, *right = nullptr; // head, tail
+
+	void setAbove(Droplet * drp);
+	void setBelow(Droplet * drp);
 
 	Droplet(double radius, double coord[]);
 	virtual ~Droplet();
