@@ -2,7 +2,6 @@
  * Droplet.cpp
  *
  *  Created on: Dec 16, 2018
- *      Author: root
  */
 
 #include <cstring>

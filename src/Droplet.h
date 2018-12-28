@@ -2,7 +2,6 @@
  * Droplet.h
  *
  *  Created on: Dec 16, 2018
- *      Author: root
  */
 
 #ifndef DROPLET_H_

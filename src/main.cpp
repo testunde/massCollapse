@@ -2,18 +2,21 @@
  * main.cpp
  *
  *  Created on: Dec 16, 2018
- *      Author: root
  */
 
 #include <stdio.h>
-#include <opencv4/opencv2/opencv.hpp>
 #include <list>
 #include <stdlib.h> // rand
 #include <time.h> // seed for rand
 #include <random> // normal_distribution
+#include <float.h> // DLB_MIN + DBL_MAX
 
 #include "Global.h"
 #include "Droplet.h"
+
+#if USE_OPENCV
+#include <opencv4/opencv2/opencv.hpp>
+#endif
 
 using namespace std;
 
@@ -32,7 +35,6 @@ void update() {
 	}
 
 	// (plain) falling
-
 	Droplet *fallDrop = Droplet::below_h; // it does not matter which dimension
 	while (fallDrop != nullptr) {
 		fallDrop->fallBy(fallDrop->getVelocity());
@@ -154,17 +156,19 @@ int main(int, char**) {
 	Droplet::sortListSize();
 
 	// init openCV
-	cv::namedWindow("env_simu", cv::WINDOW_AUTOSIZE);
 	int visu_width = ENVIRONMENT_WIDTH * VISU_WIDTH_PX_PER_METER;
 	int visu_height = ENVIRONMENT_HEIGHT * VISU_HEIGHT_PX_PER_METER;
+#if USE_OPENCV
+	cv::namedWindow("env_simu", cv::WINDOW_AUTOSIZE);
 	cv::Mat envVisu(visu_height, visu_width, CV_8UC3);
-	cv::VideoWriter video(VISU_VIDEO_FILENAME, cv::VideoWriter::fourcc(VISU_VIDEO_FORMAT), 10, cv::Size(visu_width, visu_height));
+	cv::VideoWriter video(OPENCV_VIDEO_FILENAME, cv::VideoWriter::fourcc(OPENCV_VIDEO_FORMAT), OPENCV_VIDEO_SECONDS_PER_SECOND, cv::Size(visu_width, visu_height));
+#endif
 
 	// simulation start
 	double meanTotalMassPerPx = DENSITY_WATER * pow(ENVIRONMENT_SPAWN_DROP_SIZE * .5, 3.) * (M_PI * 4. / 3.) * ENVIRONMENT_SPAWN_DROPS_TOTAL / (visu_width * visu_height);
 	printf("starting simulation... (meanTotalMassPerPx/biggestDropMass = %f)\n", meanTotalMassPerPx/Droplet::bigger_h->getMass());
 	long startTimeStamp = currentMicroSec();
-	for (int t = 0; t <= SIMULATION_TIME_MAX; t++) {
+	for (int t = 0; t <= SIMULATION_TIME_MAX; t++) { // [s]
 		update();
 		if (Droplet::disposedDrops >= ENVIRONMENT_SPAWN_DROPS_TOTAL) {
 			printf("No drops remaining. Exiting...\n");
@@ -198,8 +202,9 @@ int main(int, char**) {
 			avgSize *= 2. * 1.E3 / (double) Droplet::remainingDrops();
 
 			// visualization
-			envVisu.setTo(cv::Scalar(0, 0, 0));
 			double avgColor = 0.;
+#if USE_OPENCV
+			envVisu.setTo(cv::Scalar(0, 0, 0));
 			for (int w = 0; w < visu_width; w++) {
 				for (int h = 0; h < visu_height; h++) {
 					double totalMassRatio = total_mass[w][h] / meanTotalMassPerPx;//Droplet::bigger_h->getMass();
@@ -222,11 +227,11 @@ int main(int, char**) {
 			}
 			avgColor /= visu_width * visu_height;
 
-
 			video.write(envVisu);
 			cv::imshow("env_simu", envVisu);
 			if (cv::waitKey(30) >= 0)
 				break;
+#endif
 
 			long currentTimeStamp = currentMicroSec();
 			long eta_seconds = (long) ((SIMULATION_TIME_MAX - (long) t) * (currentTimeStamp - startTimeStamp) / (1E6L * (long) t));
@@ -238,6 +243,8 @@ int main(int, char**) {
 	}
 
 	// clear simulation environment
+#if USE_OPENCV
 	video.release();
+#endif
 	clearEnvironment();
 }

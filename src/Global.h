@@ -2,7 +2,6 @@
  * Global.h
  *
  *  Created on: Dec 16, 2018
- *      Author: root
  */
 
 #define DENSITY_WATER 997. // [kg/m^3]
@@ -22,6 +21,11 @@
 
 #define VISU_WIDTH_PX_PER_METER 10000 // [px/m]
 #define VISU_HEIGHT_PX_PER_METER .18 // [px/m]
-#define VISU_VIDEO_FILENAME "video.avi"
-#define VISU_VIDEO_FORMAT 'M', 'J', 'P', 'G'
-#define VISU_VIDEO_SECONDS_PER_SECOND 10 // [s/s] simulation seconds per video second (FPS)
+
+#define USE_OPENCV true
+
+#if USE_OPENCV
+#define OPENCV_VIDEO_FILENAME "video.avi"
+#define OPENCV_VIDEO_FORMAT 'M', 'J', 'P', 'G' // as for .avi format
+#define OPENCV_VIDEO_SECONDS_PER_SECOND 10 // [s/s] simulation seconds per video second (FPS)
+#endif
