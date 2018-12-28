@@ -29,5 +29,10 @@
 
 # Videos
 *.avi
-*.mpg
-*.mpeg4
+*.mp4
+
+# Eclipse files
+.settings
+Debug
+.project
+.cproject
