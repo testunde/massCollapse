@@ -51,7 +51,6 @@ void Droplet::deleteInstance() {
 	if (right_h == this)
 		right_h = this->left;
 
-
 	// update list linkings
 	if (bigger != nullptr)
 		bigger->smaller = this->smaller;
@@ -89,7 +88,7 @@ void Droplet::sortListWidth() {
 		preDrop = d;
 	}
 	if (preDrop != nullptr)
-			preDrop->right = nullptr;
+		preDrop->right = nullptr;
 	Droplet::right_h = preDrop;
 }
 
@@ -125,14 +124,13 @@ void Droplet::sortListSize() {
 		preDrop = d;
 	}
 	if (preDrop != nullptr)
-			preDrop->smaller = nullptr;
+		preDrop->smaller = nullptr;
 	Droplet::smaller_h = preDrop;
 }
 
 int Droplet::remainingDrops() {
 	return ENVIRONMENT_SPAWN_DROPS_TOTAL - disposedDrops;
 }
-
 
 double Droplet::updateMass() {
 	this->mass = DENSITY_WATER * pow(this->radius, 3.) * (M_PI * 4. / 3.);
@@ -145,7 +143,7 @@ double Droplet::updateVelocity() {
 
 	// input: [mm], output: [cm/2]
 	tempD *= 1.E+3; // [m] -> [mm]
-	double tempVel = exp(pow(log(tempD) - 2.4, 2.) * (-3./18.) + 6.9);
+	double tempVel = exp(pow(log(tempD) - 2.4, 2.) * (-3. / 18.) + 6.9);
 	this->velocity = tempVel * 1.E-2; // [cm/s] -> [m/s]
 
 	return this->velocity;
@@ -153,7 +151,8 @@ double Droplet::updateVelocity() {
 
 // after one second
 double Droplet::growCondensation() {
-	double seedRadius = (this->radius < DROP_GROWTH_CONDENSATION_LIMIT_SIZE) ? DROP_GROWTH_CONDENSATION_LIMIT_SIZE : this->radius;
+	double seedRadius =
+			(this->radius < DROP_GROWTH_CONDENSATION_LIMIT_SIZE) ? DROP_GROWTH_CONDENSATION_LIMIT_SIZE : this->radius;
 	double dR = (DROP_GROWTH_CONDENSATION_S - 1.) / (seedRadius * DROP_GROWTH_CONDENSATION_F);
 
 	this->radius += dR;
@@ -174,7 +173,7 @@ void Droplet::merge(list<Droplet *> *list) {
 
 	double totalMass = this->mass;
 
-	double newCoord[] = {this->coord[0] * this->mass, this->coord[1]}; // no height-change as approximation
+	double newCoord[] = { this->coord[0] * this->mass, this->coord[1] }; // no height-change as approximation
 	for (Droplet * drp : *list) {
 		totalMass += drp->getMass();
 		newCoord[0] += drp->getCoord(0) * drp->getMass();
@@ -185,7 +184,7 @@ void Droplet::merge(list<Droplet *> *list) {
 
 	memcpy(this->coord, newCoord, 2 * sizeof(double));
 	this->mass = totalMass;
-	this->radius = pow(this->mass / (DENSITY_WATER * (M_PI * 4. / 3.)), 1./3.);
+	this->radius = pow(this->mass / (DENSITY_WATER * (M_PI * 4. / 3.)), 1. / 3.);
 	double tempVel = this->velocity;
 	updateVelocity();
 	if (this->velocity < tempVel)

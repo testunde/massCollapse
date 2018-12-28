@@ -21,9 +21,9 @@
 using namespace std;
 
 long currentMicroSec() {
-    struct timespec t;
-    clock_gettime(CLOCK_MONOTONIC, &t);
-    return t.tv_sec * 1E6L + t.tv_nsec / 1E3L;
+	struct timespec t;
+	clock_gettime(CLOCK_MONOTONIC, &t);
+	return t.tv_sec * 1E6L + t.tv_nsec / 1E3L;
 }
 
 void update() {
@@ -69,21 +69,25 @@ void update() {
 
 		// calculate closest distance within the last time step between mergeDrop and potential drops
 		list<Droplet*> toMerge;
-		double mD_velo = mergeDrop->getCoord(1) - mergeDrop->getCoordPre(1); // [m/2] assuming only height change and always falling down (+)
-		double widthBound[2] = {mergeDrop->getCoord(0) - 2. * mergeDrop->getRadius(), mergeDrop->getCoord(0) + 2. * mergeDrop->getRadius()};
+		// [m/2] assuming only height change and always falling down (+)
+		double mD_velo = mergeDrop->getCoord(1) - mergeDrop->getCoordPre(1);
+		double widthBound[2] = { mergeDrop->getCoord(0) - 2. * mergeDrop->getRadius(), mergeDrop->getCoord(0)
+				+ 2. * mergeDrop->getRadius() };
 		for (Droplet *d : potentialDrps) {
 			// check if drop even in horizontal range
 			if ((d->getCoord(0) < widthBound[0]) || (d->getCoord(0) > widthBound[1]))
 				continue;
 
 			double d_velo = d->getCoord(1) - d->getCoordPre(1); // [m/2]
-			double timeClosest = (mergeDrop->getCoordPre(1) - d->getCoordPre(1)) /
-					(d_velo - mD_velo); // [s]
+			double timeClosest = (mergeDrop->getCoordPre(1) - d->getCoordPre(1)) / (d_velo - mD_velo); // [s]
 			// limit time point to [0s, 1s]
 			timeClosest = (timeClosest < 0.) ? 0 : ((timeClosest > 1.) ? 1. : timeClosest);
 
-			double distance = sqrt(pow((mergeDrop->getCoordPre(1) + timeClosest * mD_velo) - (d->getCoordPre(1) + timeClosest * d_velo), 2.)
-					+ pow(mergeDrop->getCoordPre(0) - d->getCoordPre(0), 2.)); // [m]
+			double distance = sqrt(
+					pow(
+							(mergeDrop->getCoordPre(1) + timeClosest * mD_velo)
+									- (d->getCoordPre(1) + timeClosest * d_velo), 2.)
+							+ pow(mergeDrop->getCoordPre(0) - d->getCoordPre(0), 2.)); // [m]
 
 			if (distance <= mergeDrop->getRadius() + d->getRadius())
 				toMerge.push_back(d);
@@ -99,7 +103,7 @@ void update() {
 void clearEnvironment() {
 	printf("Clearing environment...\n");
 	fflush(stdout);
-	for (Droplet * d: *Droplet::dropList) {
+	for (Droplet * d : *Droplet::dropList) {
 		delete d;
 	}
 	Droplet::dropList->clear();
@@ -118,7 +122,8 @@ double getRandom() {
 
 int main(int, char**) {
 	srand(time(nullptr));
-	normal_distribution<double> distribution(ENVIRONMENT_SPAWN_DROP_SIZE, ENVIRONMENT_SPAWN_DROP_SIZE_STD_2 * .5);
+	normal_distribution<double> distribution(ENVIRONMENT_SPAWN_DROP_SIZE,
+	ENVIRONMENT_SPAWN_DROP_SIZE_STD_2 * .5);
 	default_random_engine rnd_gen;
 
 	// initialize environment
@@ -128,8 +133,7 @@ int main(int, char**) {
 	int dCount = 0;
 	double tSmax = DBL_MIN, tSmin = DBL_MAX;
 	for (int c = 0; c < ENVIRONMENT_SPAWN_DROPS_TOTAL; c++) {
-		double tempCoord[] = {getRandom() * ENVIRONMENT_WIDTH,
-				getRandom() * ENVIRONMENT_SPAWN_THICKNESS};
+		double tempCoord[] = { getRandom() * ENVIRONMENT_WIDTH, getRandom() * ENVIRONMENT_SPAWN_THICKNESS };
 		double tempSize = 0.;
 		while (abs(tempSize - ENVIRONMENT_SPAWN_DROP_SIZE) > ENVIRONMENT_SPAWN_DROP_SIZE_STD_2) {
 			tempSize = distribution(rnd_gen);
@@ -161,12 +165,15 @@ int main(int, char**) {
 #if USE_OPENCV
 	cv::namedWindow("env_simu", cv::WINDOW_AUTOSIZE);
 	cv::Mat envVisu(visu_height, visu_width, CV_8UC3);
-	cv::VideoWriter video(OPENCV_VIDEO_FILENAME, cv::VideoWriter::fourcc(OPENCV_VIDEO_FORMAT), OPENCV_VIDEO_SECONDS_PER_SECOND, cv::Size(visu_width, visu_height));
+	cv::VideoWriter video(OPENCV_VIDEO_FILENAME, cv::VideoWriter::fourcc(OPENCV_VIDEO_FORMAT),
+	OPENCV_VIDEO_SECONDS_PER_SECOND, cv::Size(visu_width, visu_height));
 #endif
 
 	// simulation start
-	double meanTotalMassPerPx = DENSITY_WATER * pow(ENVIRONMENT_SPAWN_DROP_SIZE * .5, 3.) * (M_PI * 4. / 3.) * ENVIRONMENT_SPAWN_DROPS_TOTAL / (visu_width * visu_height);
-	printf("starting simulation... (meanTotalMassPerPx/biggestDropMass = %f)\n", meanTotalMassPerPx/Droplet::bigger_h->getMass());
+	double meanTotalMassPerPx = DENSITY_WATER * pow(ENVIRONMENT_SPAWN_DROP_SIZE * .5, 3.) * (M_PI * 4. / 3.)
+			* ENVIRONMENT_SPAWN_DROPS_TOTAL / (visu_width * visu_height);
+	printf("starting simulation... (meanTotalMassPerPx/biggestDropMass = %f)\n",
+			meanTotalMassPerPx / Droplet::bigger_h->getMass());
 	long startTimeStamp = currentMicroSec();
 	for (int t = 0; t <= SIMULATION_TIME_MAX; t++) { // [s]
 		update();
@@ -177,19 +184,23 @@ int main(int, char**) {
 
 		if (t % SIMULATION_TIME_STATS_UPDATE == 0) {
 			// count mass per pixel
-			double total_mass[visu_width][visu_height] = {0.};
-			double max_mass[visu_width][visu_height] = {0.};
-			bool contain_drop[visu_width][visu_height] = {false};
-			// reset first column (weird bug?! because it contains the values of the prior visualization step even with init=0.)
+			double total_mass[visu_width][visu_height] = { 0. };
+			double max_mass[visu_width][visu_height] = { 0. };
+			bool contain_drop[visu_width][visu_height] = { false };
+
+			// Reset first column (weird bug?! because it contains
+			// the values of the prior visualization step even with init=0.).
 			for (int h = 0; h < visu_height; h++) {
 				total_mass[0][h] = 0.;
 				max_mass[0][h] = 0.;
 				contain_drop[0][h] = false;
 			}
+
 			double avgSize = 0.;
 			Droplet *currentDrop = Droplet::left_h;
 			while (currentDrop != nullptr) {
-				int idx[2] = {(int) (currentDrop->getCoord(0) * VISU_WIDTH_PX_PER_METER), (int) (currentDrop->getCoord(1) * VISU_HEIGHT_PX_PER_METER)};
+				int idx[2] = { (int) (currentDrop->getCoord(0) * VISU_WIDTH_PX_PER_METER), (int) (currentDrop->getCoord(
+						1) * VISU_HEIGHT_PX_PER_METER) };
 				idx[1] = (idx[1] >= visu_height) ? (visu_height - 1) : idx[1];
 				total_mass[idx[0]][idx[1]] += currentDrop->getMass();
 				max_mass[idx[0]][idx[1]] = max(max_mass[idx[0]][idx[1]], currentDrop->getMass());
@@ -207,7 +218,7 @@ int main(int, char**) {
 			envVisu.setTo(cv::Scalar(0, 0, 0));
 			for (int w = 0; w < visu_width; w++) {
 				for (int h = 0; h < visu_height; h++) {
-					double totalMassRatio = total_mass[w][h] / meanTotalMassPerPx;//Droplet::bigger_h->getMass();
+					double totalMassRatio = total_mass[w][h] / meanTotalMassPerPx; //Droplet::bigger_h->getMass();
 					totalMassRatio = (log10(totalMassRatio + 0.1) + 1) / (log10(1.1) + 1);
 					int colorTotalMass = (int) (.68 * 255. * totalMassRatio);
 					colorTotalMass = (colorTotalMass > 255) ? 255 : colorTotalMass;
@@ -220,9 +231,9 @@ int main(int, char**) {
 					int colorContainDrop = contain_drop[w][h] ? 255 : 0;
 
 					envVisu.at<cv::Vec3b>(h, w) = cv::Vec3b(colorMaxMass, colorMaxMass, colorMaxMass);
-					avgColor += sqrt(pow(envVisu.at<cv::Vec3b>(h, w)[0], 2.) +
-							pow(envVisu.at<cv::Vec3b>(h, w)[1], 2.) +
-							pow(envVisu.at<cv::Vec3b>(h, w)[2], 2.));
+					avgColor += sqrt(
+							pow(envVisu.at<cv::Vec3b>(h, w)[0], 2.) + pow(envVisu.at<cv::Vec3b>(h, w)[1], 2.)
+									+ pow(envVisu.at<cv::Vec3b>(h, w)[2], 2.));
 				}
 			}
 			avgColor /= visu_width * visu_height;
@@ -234,9 +245,12 @@ int main(int, char**) {
 #endif
 
 			long currentTimeStamp = currentMicroSec();
-			long eta_seconds = (long) ((SIMULATION_TIME_MAX - (long) t) * (currentTimeStamp - startTimeStamp) / (1E6L * (long) t));
-			printf("time: %d [s] | drop size (avg/max): %f/%f [mm] | avgColor: %f [0-256[ | remaining drops: %d | lowest height: %f [m] (ETA: %ldm %lds)\n",
-					t, avgSize, Droplet::bigger_h->getRadius() * 2. * 1.E3, avgColor, Droplet::remainingDrops(), (Droplet::below_h == nullptr) ? -1 : (ENVIRONMENT_HEIGHT - Droplet::below_h->getCoord(1)),
+			long eta_seconds = (long) ((SIMULATION_TIME_MAX - (long) t) * (currentTimeStamp - startTimeStamp)
+					/ (1E6L * (long) t));
+			printf("time: %d [s] | drop size (avg/max): %f/%f [mm] | avgColor: %f [0-256[ | remaining drops: %d"
+					"| lowest height: %f [m] (ETA: %ldm %lds)\n", t, avgSize,
+					Droplet::bigger_h->getRadius() * 2. * 1.E3, avgColor, Droplet::remainingDrops(),
+					(Droplet::below_h == nullptr) ? -1 : (ENVIRONMENT_HEIGHT - Droplet::below_h->getCoord(1)),
 					eta_seconds / 60, eta_seconds % 60);
 			fflush(stdout);
 		}

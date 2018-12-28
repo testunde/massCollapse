@@ -15,8 +15,8 @@
 class Droplet {
 private:
 	double radius; // [m]
-	double coord[2] = {0., 0.}; // ([m]; [m])
-	double coordPre[2] = {0., 0.}; // ([m]; [m])
+	double coord[2] = { 0., 0. }; // ([m]; [m])
+	double coordPre[2] = { 0., 0. }; // ([m]; [m])
 	double mass; // [kg]
 	double velocity; // [m/s]
 	Droplet *mergedInto = nullptr;
