@@ -5,3 +5,5 @@ Start state is a randomly uniform distributed area of very small droplets (aroun
 
 Dependencies: OpenCV v4 (can be disabled in src/global.h; for older versions the source code may be adopted)
 
+Attation!!
+"Height" in the simulaiton is inverted! If the height has a value as defined in ENVIRONMENT_HEIGHT, it means the drop is at the ground (real world). Height = 0 in the program means the drop is at height = ENVIRONMENT_HEIGHT in the real world.
