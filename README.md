@@ -48,8 +48,6 @@ Usually, you do NOT need to re-run cmake.
 ```
 
 ## Developer Notes
-
-Attation!!
 "Height" in the simulaiton is inverted! If the height has a value as defined in ENVIRONMENT_HEIGHT, it means the drop is at the ground (real world). Height = 0 in the program means the drop is at height = ENVIRONMENT_HEIGHT in the real world.
 
 ## Auto-Format

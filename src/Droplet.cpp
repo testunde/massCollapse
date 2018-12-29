@@ -147,8 +147,8 @@ double Droplet::updateVelocity() {
 
     // input: [mm], output: [cm/2]
     tempD *= 1.E+3; // [m] -> [mm]
-    double tmp = log(tempD) - 2.4;
-    double tempVel = exp(tmp * tmp * (-3. / 18.) + 6.9);
+    double tmpLog = log(tempD) - 2.4;
+    double tempVel = exp(tmpLog * tmpLog * (-3. / 18.) + 6.9);
     this->velocity = tempVel * 1.E-2; // [cm/s] -> [m/s]
 
     return this->velocity;
