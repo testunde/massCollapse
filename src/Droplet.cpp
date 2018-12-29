@@ -133,7 +133,8 @@ int Droplet::remainingDrops() {
 }
 
 double Droplet::updateMass() {
-    this->mass = DENSITY_WATER * pow(this->radius, 3.) * (M_PI * 4. / 3.);
+    this->mass = DENSITY_WATER * (this->radius * this->radius * this->radius) *
+                 (M_PI * 4. / 3.);
     return this->mass;
 }
 
@@ -146,7 +147,8 @@ double Droplet::updateVelocity() {
 
     // input: [mm], output: [cm/2]
     tempD *= 1.E+3; // [m] -> [mm]
-    double tempVel = exp(pow(log(tempD) - 2.4, 2.) * (-3. / 18.) + 6.9);
+    double tmp = log(tempD) - 2.4;
+    double tempVel = exp(tmp * tmp * (-3. / 18.) + 6.9);
     this->velocity = tempVel * 1.E-2; // [cm/s] -> [m/s]
 
     return this->velocity;
