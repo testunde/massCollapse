@@ -4,6 +4,7 @@
  *  Created on: Dec 16, 2018
  */
 
+#include <algorithm>
 #include <cstring>
 #include <stdio.h>
 
@@ -12,7 +13,7 @@
 using namespace std;
 
 int Droplet::disposedDrops = 0;
-list<Droplet *> *Droplet::dropList = new list<Droplet *>();
+vector<Droplet *> *Droplet::dropList = new vector<Droplet *>{};
 
 Droplet *Droplet::bigger_h = nullptr;  // head
 Droplet *Droplet::smaller_h = nullptr; // tail
@@ -66,7 +67,7 @@ void Droplet::deleteInstance() {
     if (right != nullptr)
         right->left = this->left;
 
-    dropList->remove(this);
+    dropList->erase(remove(dropList->begin(), dropList->end(), this));
 
     disposedDrops++;
 
@@ -74,8 +75,9 @@ void Droplet::deleteInstance() {
 }
 
 void Droplet::sortListWidth() {
-    dropList->sort(
-        [](Droplet *a, Droplet *b) { return a->getCoord(0) < b->getCoord(0); });
+    sort(dropList->begin(), dropList->end(), [](Droplet *a, Droplet *b) {
+        return a->getCoord(0) < b->getCoord(0);
+    });
     Droplet *preDrop = nullptr;
     for (Droplet *d : *dropList) {
         d->left = preDrop;
@@ -91,8 +93,9 @@ void Droplet::sortListWidth() {
 }
 
 void Droplet::sortListHeight() {
-    dropList->sort(
-        [](Droplet *a, Droplet *b) { return a->getCoord(1) < b->getCoord(1); });
+    sort(dropList->begin(), dropList->end(), [](Droplet *a, Droplet *b) {
+        return a->getCoord(1) < b->getCoord(1);
+    });
     Droplet *preDrop = nullptr;
     for (Droplet *d : *dropList) {
         d->setAbove(preDrop);
@@ -108,8 +111,9 @@ void Droplet::sortListHeight() {
 }
 
 void Droplet::sortListSize() {
-    dropList->sort(
-        [](Droplet *a, Droplet *b) { return a->getRadius() > b->getRadius(); });
+    sort(dropList->begin(), dropList->end(), [](Droplet *a, Droplet *b) {
+        return a->getRadius() > b->getRadius();
+    });
     Droplet *preDrop = nullptr;
     for (Droplet *d : *dropList) {
         d->bigger = preDrop;

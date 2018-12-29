@@ -36,14 +36,15 @@ void update() {
     }
 
     // (plain) falling
-    Droplet *fallDrop = Droplet::below_h; // it does not matter which dimension
-    while (fallDrop != nullptr) {
+    vector<Droplet *> to_delete{};
+    for (Droplet *fallDrop : *Droplet::dropList) {
         fallDrop->fallBy(fallDrop->getVelocity());
-        Droplet *nextDrop = fallDrop->above;
-        if (fallDrop->getCoordPre(1) >= ENVIRONMENT_HEIGHT)
-            fallDrop->deleteInstance();
-
-        fallDrop = nextDrop;
+        if (fallDrop->getCoordPre(1) >= ENVIRONMENT_HEIGHT) {
+            to_delete.push_back(fallDrop);
+        }
+    }
+    for (Droplet *fallDrop : to_delete) {
+        fallDrop->deleteInstance();
     }
     Droplet::sortListHeight();
 

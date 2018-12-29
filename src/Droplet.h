@@ -9,6 +9,7 @@
 
 #include "math.h"
 #include <list>
+#include <vector>
 
 #include "Global.h"
 
@@ -26,7 +27,7 @@ class Droplet {
 
   public:
     static int disposedDrops;
-    static std::list<Droplet *> *dropList;
+    static std::vector<Droplet *> *dropList;
 
     static void sortListWidth();
     static void sortListHeight();
