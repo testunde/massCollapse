@@ -1,12 +1,16 @@
 # project config
 cmake_minimum_required(VERSION 3.5)
 project(dropgrowth VERSION 0.1.0 LANGUAGES CXX)
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/externals/sanitizers-cmake/cmake" ${CMAKE_MODULE_PATH})
 set(SRC src/Droplet.cpp src/main.cpp)
+
+find_package(Sanitizers)
 
 # executable
 add_executable(dropgrowth ${SRC})
 target_compile_features(dropgrowth PRIVATE cxx_std_11)
 set_target_properties(dropgrowth PROPERTIES POSITION_INDEPENDENT_CODE ON)
+add_sanitizers(dropgrowth)
 
 # OpenCV
 find_package(OpenCV QUIET)

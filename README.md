@@ -19,7 +19,7 @@ Depending if you want to use a debug or release build, either run
 
 ```
 # debugging
-cmake -GNinja -DCMAKE_BUILD_TYPE=Debug ..
+cmake -GNinja -DCMAKE_BUILD_TYPE=Debug -DSANITIZE_ADDRESS=On ..
 ```
 
 or
