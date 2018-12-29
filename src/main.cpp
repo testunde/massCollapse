@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <list>
+#include <vector>
 #include <stdlib.h> // rand
 #include <time.h> // seed for rand
 #include <random> // normal_distribution
@@ -120,6 +121,15 @@ double getRandom() {
 	return ((double) random()) / ((double) RAND_MAX);
 }
 
+template<class T>
+vector<vector<T>> init_matrix(int a, int b, T v) {
+    vector<vector<T>> matrix;
+    for (int i = 0; i < a; i++) {
+        matrix.emplace_back(b, v);
+    }
+    return matrix;
+}
+
 int main(int, char**) {
 	srand(time(nullptr));
 	normal_distribution<double> distribution(ENVIRONMENT_SPAWN_DROP_SIZE,
@@ -184,9 +194,9 @@ int main(int, char**) {
 
 		if (t % SIMULATION_TIME_STATS_UPDATE == 0) {
 			// count mass per pixel
-			double total_mass[visu_width][visu_height] = { 0. };
-			double max_mass[visu_width][visu_height] = { 0. };
-			bool contain_drop[visu_width][visu_height] = { false };
+            auto total_mass = init_matrix<double>(visu_width, visu_height, 0.);
+            auto max_mass = init_matrix<double>(visu_width, visu_height, 0.);
+            auto contain_drop = init_matrix<bool>(visu_width, visu_height, false);
 
 			// Reset first column (weird bug?! because it contains
 			// the values of the prior visualization step even with init=0.).
