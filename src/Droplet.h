@@ -50,11 +50,14 @@ class Droplet {
     virtual ~Droplet();
     void deleteInstance();
 
-    double getRadius();
-    double getCoord(int axis);
-    double getCoordPre(int axis);
-    double getMass();
-    double getVelocity();
+    double getCoord(int axis) const { return this->coord[axis]; }
+    double getCoordPre(int axis) const { return this->coordPre[axis]; }
+
+    double getRadius() const { return this->radius; }
+
+    double getMass() const { return this->mass; }
+    double getVelocity() const { return this->velocity; }
+
     Droplet *getFinalMergred();
 
     double growCondensation();

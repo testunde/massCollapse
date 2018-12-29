@@ -213,16 +213,6 @@ void Droplet::fallBy(double way) {
 
 void Droplet::setMergedInto(Droplet *drp) { this->mergedInto = drp; }
 
-double Droplet::getRadius() { return this->radius; }
-
-double Droplet::getCoord(int axis) { return this->coord[axis]; }
-
-double Droplet::getCoordPre(int axis) { return this->coordPre[axis]; }
-
-double Droplet::getMass() { return this->mass; }
-
-double Droplet::getVelocity() { return this->velocity; }
-
 Droplet *Droplet::getFinalMergred() {
     if (this->mergedInto != nullptr)
         return this->mergedInto->getFinalMergred();
