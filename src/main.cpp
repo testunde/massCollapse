@@ -14,7 +14,7 @@
 #include "Global.h"
 #include "Droplet.h"
 
-#if USE_OPENCV
+#ifdef USE_OPENCV
 #include <opencv4/opencv2/opencv.hpp>
 #endif
 
@@ -162,7 +162,7 @@ int main(int, char**) {
 	// init openCV
 	int visu_width = ENVIRONMENT_WIDTH * VISU_WIDTH_PX_PER_METER;
 	int visu_height = ENVIRONMENT_HEIGHT * VISU_HEIGHT_PX_PER_METER;
-#if USE_OPENCV
+#ifdef USE_OPENCV
 	cv::namedWindow("env_simu", cv::WINDOW_AUTOSIZE);
 	cv::Mat envVisu(visu_height, visu_width, CV_8UC3);
 	cv::VideoWriter video(OPENCV_VIDEO_FILENAME, cv::VideoWriter::fourcc(OPENCV_VIDEO_FORMAT),
@@ -214,7 +214,7 @@ int main(int, char**) {
 
 			// visualization
 			double avgColor = 0.;
-#if USE_OPENCV
+#ifdef USE_OPENCV
 			envVisu.setTo(cv::Scalar(0, 0, 0));
 			for (int w = 0; w < visu_width; w++) {
 				for (int h = 0; h < visu_height; h++) {
@@ -257,7 +257,7 @@ int main(int, char**) {
 	}
 
 	// clear simulation environment
-#if USE_OPENCV
+#ifdef USE_OPENCV
 	video.release();
 #endif
 	clearEnvironment();

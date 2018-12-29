@@ -36,3 +36,6 @@
 Debug
 .project
 .cproject
+
+# build dir
+build/
