@@ -156,9 +156,8 @@ double Droplet::updateVelocity() {
 
 // after one second
 double Droplet::growCondensation() {
-    double seedRadius = (this->radius < DROP_GROWTH_CONDENSATION_LIMIT_SIZE)
-                            ? DROP_GROWTH_CONDENSATION_LIMIT_SIZE
-                            : this->radius;
+    double seedRadius = max(this->radius, DROP_GROWTH_CONDENSATION_LIMIT_SIZE);
+
     double dR = (DROP_GROWTH_CONDENSATION_S - 1.) /
                 (seedRadius * DROP_GROWTH_CONDENSATION_F);
 

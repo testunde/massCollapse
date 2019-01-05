@@ -91,11 +91,12 @@ void update() {
                               ? 0
                               : ((timeClosest > 1.) ? 1. : timeClosest);
 
-            double distance = sqrt(
-                pow((mergeDrop->getCoordPre(1) + timeClosest * mD_velo) -
-                        (d->getCoordPre(1) + timeClosest * d_velo),
-                    2.) +
-                pow(mergeDrop->getCoordPre(0) - d->getCoordPre(0), 2.)); // [m]
+            double distHeight =
+                (mergeDrop->getCoordPre(1) + timeClosest * mD_velo) -
+                (d->getCoordPre(1) + timeClosest * d_velo);
+            double distWidth = mergeDrop->getCoordPre(0) - d->getCoordPre(0);
+            double distance =
+                sqrt(distHeight * distHeight + distWidth * distWidth); // [m]
 
             if (distance <= mergeDrop->getRadius() + d->getRadius())
                 toMerge.push_back(d);
@@ -188,7 +189,9 @@ int main(int, char **) {
 
     // simulation start
     double meanTotalMassPerPx =
-        DENSITY_WATER * pow(ENVIRONMENT_SPAWN_DROP_SIZE * .5, 3.) *
+        DENSITY_WATER *
+        (ENVIRONMENT_SPAWN_DROP_SIZE * ENVIRONMENT_SPAWN_DROP_SIZE *
+         ENVIRONMENT_SPAWN_DROP_SIZE * .125) *
         (M_PI * 4. / 3.) * ENVIRONMENT_SPAWN_DROPS_TOTAL /
         (visu_width * visu_height);
     printf("starting simulation... (meanTotalMassPerPx/biggestDropMass = %f)\n",
@@ -207,14 +210,6 @@ int main(int, char **) {
             auto max_mass = init_matrix<double>(visu_width, visu_height, 0.);
             auto contain_drop =
                 init_matrix<bool>(visu_width, visu_height, false);
-
-            // Reset first column (weird bug?! because it contains
-            // the values of the prior visualization step even with init=0.).
-            for (int h = 0; h < visu_height; h++) {
-                total_mass[0][h] = 0.;
-                max_mass[0][h] = 0.;
-                contain_drop[0][h] = false;
-            }
 
             double avgSize = 0.;
             Droplet *currentDrop = Droplet::left_h;
@@ -280,7 +275,7 @@ int main(int, char **) {
             printf(
                 "time: %d [s] | drop size (avg/max): %f/%f [mm] | avgColor: %f "
                 "[0-256[ | remaining drops: %d"
-                "| lowest height: %f [m] (ETA: %ldm %lds)\n",
+                " | lowest height: %f [m] (ETA: %ldm %lds)\n",
                 t, avgSize, Droplet::bigger_h->getRadius() * 2. * 1.E3,
                 avgColor, Droplet::remainingDrops(),
                 (Droplet::below_h == nullptr)
