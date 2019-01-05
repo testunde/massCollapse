@@ -185,6 +185,8 @@ int main(int, char **) {
     cv::VideoWriter video(
         OPENCV_VIDEO_FILENAME, cv::VideoWriter::fourcc(OPENCV_VIDEO_FORMAT),
         OPENCV_VIDEO_SECONDS_PER_SECOND, cv::Size(visu_width, visu_height));
+    visu_width /= OPENCV_VIDEO_SCALE;
+    visu_height /= OPENCV_VIDEO_SCALE;
 #endif
 
     // simulation start
@@ -210,18 +212,28 @@ int main(int, char **) {
             auto max_mass = init_matrix<double>(visu_width, visu_height, 0.);
             auto contain_drop =
                 init_matrix<bool>(visu_width, visu_height, false);
+            auto count_drop = init_matrix<int>(visu_width, visu_height, 0);
 
             double avgSize = 0.;
             Droplet *currentDrop = Droplet::left_h;
+            int pixels_with_droplets = 0;
+            int count_drop_max = 0;
             while (currentDrop != nullptr) {
                 int idx[2] = {
-                    (int)(currentDrop->getCoord(0) * VISU_WIDTH_PX_PER_METER),
-                    (int)(currentDrop->getCoord(1) * VISU_HEIGHT_PX_PER_METER)};
+                    (int)(currentDrop->getCoord(0) * VISU_WIDTH_PX_PER_METER /
+                          OPENCV_VIDEO_SCALE),
+                    (int)(currentDrop->getCoord(1) * VISU_HEIGHT_PX_PER_METER /
+                          OPENCV_VIDEO_SCALE)};
                 idx[1] = (idx[1] >= visu_height) ? (visu_height - 1) : idx[1];
                 total_mass[idx[0]][idx[1]] += currentDrop->getMass();
                 max_mass[idx[0]][idx[1]] =
                     max(max_mass[idx[0]][idx[1]], currentDrop->getMass());
+                if (contain_drop[idx[0]][idx[1]] == false)
+                    pixels_with_droplets++;
                 contain_drop[idx[0]][idx[1]] = true;
+                count_drop[idx[0]][idx[1]]++;
+                count_drop_max =
+                    max(count_drop_max, count_drop[idx[0]][idx[1]]);
 
                 avgSize += currentDrop->getRadius();
 
@@ -238,26 +250,33 @@ int main(int, char **) {
                     double totalMassRatio =
                         total_mass[w][h] /
                         meanTotalMassPerPx; // Droplet::bigger_h->getMass();
-                    totalMassRatio =
-                        (log10(totalMassRatio + 0.1) + 1) / (log10(1.1) + 1);
+                    // totalMassRatio =
+                    //    (log10(totalMassRatio + 0.1) + 1) / (log10(1.1) + 1);
                     int colorTotalMass = (int)(.68 * 255. * totalMassRatio);
                     colorTotalMass =
                         (colorTotalMass > 255) ? 255 : colorTotalMass;
 
                     double maxMassRatio =
                         max_mass[w][h] / Droplet::bigger_h->getMass();
-                    maxMassRatio =
-                        (log10(maxMassRatio + 0.1) + 1) / (log10(1.1) + 1);
+                    // maxMassRatio =
+                    //    (log10(maxMassRatio + 0.1) + 1) / (log10(1.1) + 1);
                     int colorMaxMass = (int)(255. * maxMassRatio);
                     colorMaxMass = (colorMaxMass > 255) ? 255 : colorMaxMass;
 
                     int colorContainDrop = contain_drop[w][h] ? 255 : 0;
 
-                    envVisu.at<cv::Vec3b>(h, w) =
-                        cv::Vec3b(colorMaxMass, colorMaxMass, colorMaxMass);
-                    avgColor += sqrt(pow(envVisu.at<cv::Vec3b>(h, w)[0], 2.) +
-                                     pow(envVisu.at<cv::Vec3b>(h, w)[1], 2.) +
-                                     pow(envVisu.at<cv::Vec3b>(h, w)[2], 2.));
+                    int colorCountDrop =
+                        (int)(255. * ((double)count_drop[w][h]) /
+                              (double)count_drop_max);
+
+                    cv::Vec3b finalColor(colorCountDrop, colorMaxMass, 0);
+                    for (int ww = 0; ww < OPENCV_VIDEO_SCALE; ww++)
+                        for (int hh = 0; hh < OPENCV_VIDEO_SCALE; hh++)
+                            envVisu.at<cv::Vec3b>(h * OPENCV_VIDEO_SCALE + hh,
+                                                  w * OPENCV_VIDEO_SCALE + ww) =
+                                finalColor;
+                    avgColor +=
+                        (finalColor[0] + finalColor[1] + finalColor[2]) / 3.;
                 }
             }
             avgColor /= visu_width * visu_height;
