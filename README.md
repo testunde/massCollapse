@@ -7,7 +7,6 @@ Start state is a randomly uniform distributed area of very small droplets (aroun
 
 ## Dependencies
 OpenCV v4 (can be disabled in src/global.h; for older versions the source code may be adopted)
-sanitizer
 
 ### Configure
 Use a out-of-tree build to not pollute your checkout:
