@@ -5,8 +5,7 @@
  */
 
 #include <float.h> // DLB_MIN + DBL_MAX
-#include <list>
-#include <random> // normal_distribution
+#include <random>  // normal_distribution
 #include <stdio.h>
 #include <stdlib.h> // rand
 #include <time.h>   // seed for rand
@@ -51,7 +50,7 @@ void update() {
     // merging
     Droplet *mergeDrop = Droplet::bigger_h;
     while (mergeDrop != nullptr) {
-        list<Droplet *> potentialDrps;
+        vector<Droplet *> potentialDrps;
 
         // above
         Droplet *tempDrop = mergeDrop->above;
@@ -71,7 +70,7 @@ void update() {
 
         // calculate closest distance within the last time step between
         // mergeDrop and potential drops
-        list<Droplet *> toMerge;
+        vector<Droplet *> toMerge;
         // [m/2] assuming only height change and always falling down (+)
         double mD_velo = mergeDrop->getCoord(1) - mergeDrop->getCoordPre(1);
         double widthBound[2] = {

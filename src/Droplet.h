@@ -8,7 +8,6 @@
 #define DROPLET_H_
 
 #include "math.h"
-#include <list>
 #include <vector>
 
 #include "Global.h"
@@ -61,7 +60,7 @@ class Droplet {
     Droplet *getFinalMergred();
 
     double growCondensation();
-    void merge(std::list<Droplet *> *list);
+    void merge(std::vector<Droplet *> *list);
     void fallBy(double way);
     void setMergedInto(Droplet *drp);
 };

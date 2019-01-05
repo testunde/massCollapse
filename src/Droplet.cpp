@@ -175,7 +175,7 @@ double Droplet::growCondensation() {
     return dR;
 }
 
-void Droplet::merge(list<Droplet *> *list) {
+void Droplet::merge(vector<Droplet *> *list) {
     if (list->empty())
         return;
 
