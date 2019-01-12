@@ -26,7 +26,22 @@ long currentMicroSec() {
     return t.tv_sec * 1E6L + t.tv_nsec / 1E3L;
 }
 
-void update() {}
+long simplePowBase2(int e) {
+    long result = 1L;
+    for (int i = e; i > 0; i--)
+        result *= 2;
+    return result;
+}
+
+void update() {
+    // velocity
+    for (Particle *p : *Particle::particleList)
+        p->updateVelocity();
+
+    // position
+    for (Particle *p : *Particle::particleList)
+        p->updatePosition();
+}
 
 void clearEnvironment() {
     printf("Clearing environment...\n");
@@ -61,32 +76,44 @@ int main(int, char **) {
     // generate particles
     int dCount = 0;
     double tMmax = DBL_MIN, tMmin = DBL_MAX;
-    for (int c = 0; c < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; c++) {
-        double tempCoord[] = {getRandom() * ENVIRONMENT_WIDTH,
-                              getRandom() * ENVIRONMENT_HEIGHT};
-        double tempVel[] = {0., 0.};
-        double tempMass = 0.;
-        while (abs(tempMass - ENVIRONMENT_SPAWN_PARTICLE_MASS) >
-               ENVIRONMENT_SPAWN_PARTICLE_MASS_STD_2) {
-            tempMass = distribution(rnd_gen);
-        }
+    //    for (int c = 0; c < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; c++) {
+    //        double tempCoord[] = {getRandom() * ENVIRONMENT_WIDTH,
+    //                              getRandom() * ENVIRONMENT_HEIGHT};
+    //        double tempVel[] = {0., 0.};
+    //        double tempMass = 0.;
+    //        while (abs(tempMass - ENVIRONMENT_SPAWN_PARTICLE_MASS) >
+    //               ENVIRONMENT_SPAWN_PARTICLE_MASS_STD_2) {
+    //            tempMass = distribution(rnd_gen);
+    //        }
+    //
+    //        if (tempMass > tMmax)
+    //            tMmax = tempMass;
+    //        if (tempMass < tMmin)
+    //            tMmin = tempMass;
+    //
+    //        Particle *tempParticle = new Particle(tempMass, tempCoord,
+    //        tempVel); Particle::particleList->push_back(tempParticle);
+    //
+    //        dCount++;
+    //        if (dCount % ((int)ENVIRONMENT_SPAWN_PARTICLES_TOTAL / 10) == 0) {
+    //            printf("%.0f%%\r",
+    //                   100. * dCount / ENVIRONMENT_SPAWN_PARTICLES_TOTAL);
+    //            fflush(stdout);
+    //        }
+    //    }
+    //    printf("min: %f | max: %f [kg]\n", tMmin, tMmax);
 
-        if (tempMass > tMmax)
-            tMmax = tempMass;
-        if (tempMass < tMmin)
-            tMmin = tempMass;
+    double posC[2] = {0.5, 0.5};
+    double zero[2] = {0., 0.};
+    Particle *center = new Particle(5.e4, posC, zero);
+    center->setFixed(true);
+    Particle::particleList->push_back(center);
 
-        Particle *tempParticle = new Particle(tempMass, tempCoord, tempVel);
-        Particle::particleList->push_back(tempParticle);
-
-        dCount++;
-        if (dCount % ((int)ENVIRONMENT_SPAWN_PARTICLES_TOTAL / 10) == 0) {
-            printf("%.0f%%\r",
-                   100. * dCount / ENVIRONMENT_SPAWN_PARTICLES_TOTAL);
-            fflush(stdout);
-        }
-    }
-    printf("min: %f | max: %f [kg]\n", tMmin, tMmax);
+    double posS[2] = {.6, .5};
+    double velS[2] = {
+        0., .1 * sqrt(GRAVITAIONAL_CONSTANT * center->getMass() / .1)};
+    Particle *sat = new Particle(1.e1, posS, velS);
+    Particle::particleList->push_back(sat);
 
     // init openCV
     int visu_width = ENVIRONMENT_WIDTH * VISU_WIDTH_PX_PER_METER;
@@ -114,18 +141,17 @@ int main(int, char **) {
             auto total_mass = init_matrix<double>(visu_width, visu_height, 0.);
             auto count_particle = init_matrix<int>(visu_width, visu_height, 0);
 
-            int count_particle_max = 0;
             for (Particle *p : *Particle::particleList) {
                 int idx[2] = {
                     (int)(p->getPosition(0) * VISU_WIDTH_PX_PER_METER /
                           OPENCV_VIDEO_SCALE),
                     (int)(p->getPosition(1) * VISU_HEIGHT_PX_PER_METER /
                           OPENCV_VIDEO_SCALE)};
-                idx[1] = (idx[1] >= visu_height) ? (visu_height - 1) : idx[1];
+                idx[0] = max(min(idx[0], visu_height - 1), 0);
+                idx[1] = max(min(idx[1], visu_height - 1), 0);
                 total_mass[idx[0]][idx[1]] += p->getMass();
                 count_particle[idx[0]][idx[1]]++;
             }
-
             // visualization
             double avgColor = 0.;
 #ifdef USE_OPENCV
@@ -137,15 +163,18 @@ int main(int, char **) {
                     // totalMassRatio =
                     //    (log10(totalMassRatio + 0.1) + 1) / (log10(1.1)
                     //    + 1);
-                    int colorTotalMass = (int)(.68 * 255. * totalMassRatio);
-                    colorTotalMass =
-                        (colorTotalMass > 255) ? 255 : colorTotalMass;
+                    int colorTotalMass =
+                        min(255, (int)(.68 * 255. * totalMassRatio));
 
+                    int cP = count_particle[w][h];
                     int colorCountParticle =
-                        (int)(255. * ((double)count_particle[w][h]) /
-                              (double)count_particle_max);
+                        (int)(255. * ((double)cP) /
+                              (double)Particle::particleList->size());
 
-                    cv::Vec3b finalColor(colorCountParticle, colorTotalMass, 0);
+                    int colorCountParticle2 =
+                        (cP > 0) ? (int)(255. / (double)simplePowBase2(cP)) : 0;
+
+                    cv::Vec3b finalColor(0, colorCountParticle, colorTotalMass);
                     for (int ww = 0; ww < OPENCV_VIDEO_SCALE; ww++)
                         for (int hh = 0; hh < OPENCV_VIDEO_SCALE; hh++)
                             envVisu.at<cv::Vec3b>(h * OPENCV_VIDEO_SCALE + hh,

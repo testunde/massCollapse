@@ -6,18 +6,18 @@
 
 #define GRAVITAIONAL_CONSTANT 6.67408E-11 // [m^3 / (kg * s^2)]
 
-#define ENVIRONMENT_WIDTH 1  // [m]
-#define ENVIRONMENT_HEIGHT 1 // [m]
-#define ENVIRONMENT_SPAWN_PARTICLES_TOTAL 1E3
-#define ENVIRONMENT_SPAWN_PARTICLE_MASS 2.E-6        // [kg]
-#define ENVIRONMENT_SPAWN_PARTICLE_MASS_STD_2 1.8E-6 // [kg] (2*std)
+#define ENVIRONMENT_WIDTH 1                         // [m]
+#define ENVIRONMENT_HEIGHT 1                        // [m]
+#define ENVIRONMENT_SPAWN_PARTICLES_TOTAL 2         //.5E4
+#define ENVIRONMENT_SPAWN_PARTICLE_MASS 5.E2        // [kg]
+#define ENVIRONMENT_SPAWN_PARTICLE_MASS_STD_2 1.8E1 // [kg] (2*std)
 
 #define SIMULATION_TIME_MAX 3600       // [s]
 #define SIMULATION_TIME_STATS_UPDATE 1 // [s]
 
 #define VISU_WIDTH_PX_PER_METER 800  // [px/m]
 #define VISU_HEIGHT_PX_PER_METER 800 // [px/m]
-#define USE_OPENCV 1
+
 #ifdef USE_OPENCV
 #define OPENCV_VIDEO_FILENAME "video.avi"
 #define OPENCV_VIDEO_FORMAT 'H', 'F', 'Y', 'U' // raw; as for .avi format

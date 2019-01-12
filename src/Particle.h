@@ -14,12 +14,14 @@
 
 class Particle {
   private:
-    double position[2] = {0., 0.}; // ([m]; [m])
-    double velocity[2] = {0., 0.}; // ([m]; [m])
-    double mass;                   // [kg]
+    double position[2] = {0., 0.};    // ([m]; [m])
+    double positionPre[2] = {0., 0.}; // ([m]; [m])
+    double velocity[2] = {0., 0.};    // ([m]; [m])
+    double mass = 0.;                 // [kg]
+    bool fixed = false;
 
-    void updateVelocity();
-    void updatePosition();
+    static std::vector<double> accelByDistance(std::vector<double> distance,
+                                               double mass);
 
   public:
     static std::vector<Particle *> *particleList;
@@ -27,9 +29,14 @@ class Particle {
     Particle(double mass, double position[], double velocity[]);
     virtual ~Particle();
 
+    void updateVelocity();
+    void updatePosition();
+
     double getPosition(int axis) const { return this->position[axis]; }
     double getVelocity(int axis) const { return this->velocity[axis]; }
     double getMass() const { return this->mass; }
+
+    void setFixed(bool fixed);
 };
 
 #endif /* PARTICLE_H_ */
