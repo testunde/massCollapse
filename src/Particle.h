@@ -22,6 +22,9 @@ class Particle {
 
     static std::vector<double> accelByDistance(std::vector<double> distance,
                                                double mass);
+    static std::vector<double> addVec(std::vector<double> v1,
+                                      std::vector<double> v2);
+    static std::vector<double> multVec(std::vector<double> v1, double scalar);
 
   public:
     static std::vector<Particle *> *particleList;
