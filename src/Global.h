@@ -11,6 +11,8 @@
 #define ENVIRONMENT_SPAWN_PARTICLES_TOTAL 2         //.5E4
 #define ENVIRONMENT_SPAWN_PARTICLE_MASS 5.E2        // [kg]
 #define ENVIRONMENT_SPAWN_PARTICLE_MASS_STD_2 1.8E1 // [kg] (2*std)
+#define ENVIRONMENT_SPAWN_START_VELO                                           \
+    -2.E-3 // [m/2] (orthogonal towards the center)
 
 #define SIMULATION_TIME_MAX 3600       // [s]
 #define SIMULATION_TIME_STATS_UPDATE 1 // [s]

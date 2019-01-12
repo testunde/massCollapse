@@ -76,44 +76,39 @@ int main(int, char **) {
     // generate particles
     int dCount = 0;
     double tMmax = DBL_MIN, tMmin = DBL_MAX;
-    //    for (int c = 0; c < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; c++) {
-    //        double tempCoord[] = {getRandom() * ENVIRONMENT_WIDTH,
-    //                              getRandom() * ENVIRONMENT_HEIGHT};
-    //        double tempVel[] = {0., 0.};
-    //        double tempMass = 0.;
-    //        while (abs(tempMass - ENVIRONMENT_SPAWN_PARTICLE_MASS) >
-    //               ENVIRONMENT_SPAWN_PARTICLE_MASS_STD_2) {
-    //            tempMass = distribution(rnd_gen);
-    //        }
-    //
-    //        if (tempMass > tMmax)
-    //            tMmax = tempMass;
-    //        if (tempMass < tMmin)
-    //            tMmin = tempMass;
-    //
-    //        Particle *tempParticle = new Particle(tempMass, tempCoord,
-    //        tempVel); Particle::particleList->push_back(tempParticle);
-    //
-    //        dCount++;
-    //        if (dCount % ((int)ENVIRONMENT_SPAWN_PARTICLES_TOTAL / 10) == 0) {
-    //            printf("%.0f%%\r",
-    //                   100. * dCount / ENVIRONMENT_SPAWN_PARTICLES_TOTAL);
-    //            fflush(stdout);
-    //        }
-    //    }
-    //    printf("min: %f | max: %f [kg]\n", tMmin, tMmax);
+    for (int c = 0; c < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; c++) {
+        double tempCoord[] = {getRandom() * ENVIRONMENT_WIDTH,
+                              getRandom() * ENVIRONMENT_HEIGHT};
+        double tempCoordCenter[] = {tempCoord[0] - ENVIRONMENT_WIDTH * .5,
+                                    tempCoord[1] - ENVIRONMENT_HEIGHT * .5};
+        double coordNorm = sqrt(tempCoordCenter[0] * tempCoordCenter[0] +
+                                tempCoordCenter[1] * tempCoordCenter[1]);
 
-    double posC[2] = {0.5, 0.5};
-    double zero[2] = {0., 0.};
-    Particle *center = new Particle(5.e4, posC, zero);
-    center->setFixed(true);
-    Particle::particleList->push_back(center);
+        double tempVel[] = {
+            ENVIRONMENT_SPAWN_START_VELO * (-tempCoordCenter[1]) / coordNorm,
+            ENVIRONMENT_SPAWN_START_VELO * (+tempCoordCenter[0]) / coordNorm};
+        double tempMass = 0.;
+        while (abs(tempMass - ENVIRONMENT_SPAWN_PARTICLE_MASS) >
+               ENVIRONMENT_SPAWN_PARTICLE_MASS_STD_2) {
+            tempMass = distribution(rnd_gen);
+        }
 
-    double posS[2] = {.6, .5};
-    double velS[2] = {
-        0., .1 * sqrt(GRAVITAIONAL_CONSTANT * center->getMass() / .1)};
-    Particle *sat = new Particle(1.e1, posS, velS);
-    Particle::particleList->push_back(sat);
+        if (tempMass > tMmax)
+            tMmax = tempMass;
+        if (tempMass < tMmin)
+            tMmin = tempMass;
+
+        Particle *tempParticle = new Particle(tempMass, tempCoord, tempVel);
+        Particle::particleList->push_back(tempParticle);
+
+        dCount++;
+        if (dCount % ((int)ENVIRONMENT_SPAWN_PARTICLES_TOTAL / 10) == 0) {
+            printf("%.0f%%\r",
+                   100. * dCount / ENVIRONMENT_SPAWN_PARTICLES_TOTAL);
+            fflush(stdout);
+        }
+    }
+    printf("min: %f | max: %f [kg]\n", tMmin, tMmax);
 
     // init openCV
     int visu_width = ENVIRONMENT_WIDTH * VISU_WIDTH_PX_PER_METER;
@@ -174,7 +169,8 @@ int main(int, char **) {
                     int colorCountParticle2 =
                         (cP > 0) ? (int)(255. / (double)simplePowBase2(cP)) : 0;
 
-                    cv::Vec3b finalColor(0, colorCountParticle, colorTotalMass);
+                    cv::Vec3b finalColor(0, colorCountParticle2,
+                                         colorTotalMass);
                     for (int ww = 0; ww < OPENCV_VIDEO_SCALE; ww++)
                         for (int hh = 0; hh < OPENCV_VIDEO_SCALE; hh++)
                             envVisu.at<cv::Vec3b>(h * OPENCV_VIDEO_SCALE + hh,
