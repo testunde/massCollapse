@@ -6,9 +6,9 @@
 
 #define GRAVITAIONAL_CONSTANT 6.67408E-11 // [m^3 / (kg * s^2)]
 
-#define ENVIRONMENT_WIDTH 1                         // [m]
-#define ENVIRONMENT_HEIGHT 1                        // [m]
-#define ENVIRONMENT_SPAWN_PARTICLES_TOTAL 2         //.5E4
+#define ENVIRONMENT_WIDTH 1  // [m]
+#define ENVIRONMENT_HEIGHT 1 // [m]
+#define ENVIRONMENT_SPAWN_PARTICLES_TOTAL .5E3
 #define ENVIRONMENT_SPAWN_PARTICLE_MASS 5.E2        // [kg]
 #define ENVIRONMENT_SPAWN_PARTICLE_MASS_STD_2 1.8E1 // [kg] (2*std)
 #define ENVIRONMENT_SPAWN_START_VELO                                           \

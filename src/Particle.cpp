@@ -99,11 +99,8 @@ void Particle::updateVelocity() {
 
         vector<double> deltaR = {p->getPosition(0) - this->position[0],
                                  p->getPosition(1) - this->position[1]};
-        double massP = p->getMass();
 
-        printf("%f, %f\n", deltaR[0], deltaR[0]);
-
-        vector<double> rk = RungeKutta5(deltaR, massP);
+        vector<double> rk = RungeKutta4(deltaR, p->getMass());
 
         this->velocity[0] += rk[0];
         this->velocity[1] += rk[1];
