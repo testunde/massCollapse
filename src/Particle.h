@@ -1,32 +1,32 @@
 /*
- * Droplet.h
+ * Particle.h
  *
- *  Created on: Dec 16, 2018
+ *  Created on: Jan 12, 2019
  */
 
-#ifndef DROPLET_H_
-#define DROPLET_H_
+#ifndef PARTICLE_H_
+#define PARTICLE_H_
 
 #include "math.h"
 #include <vector>
 
 #include "Global.h"
 
-class Droplet {
+class Particle {
   private:
     double radius;                 // [m]
     double coord[2] = {0., 0.};    // ([m]; [m])
     double coordPre[2] = {0., 0.}; // ([m]; [m])
     double mass;                   // [kg]
     double velocity;               // [m/s]
-    Droplet *mergedInto = nullptr;
+    Particle *mergedInto = nullptr;
 
     double updateMass();
     double updateVelocity();
 
   public:
     static int disposedDrops;
-    static std::vector<Droplet *> *dropList;
+    static std::vector<Particle *> *dropList;
 
     static void sortListWidth();
     static void sortListHeight();
@@ -34,19 +34,19 @@ class Droplet {
 
     static int remainingDrops();
 
-    static Droplet *bigger_h, *smaller_h; // head, tail
-    static Droplet *above_h, *below_h;    // head, tail
-    static Droplet *left_h, *right_h;     // head, tail
+    static Particle *bigger_h, *smaller_h; // head, tail
+    static Particle *above_h, *below_h;    // head, tail
+    static Particle *left_h, *right_h;     // head, tail
 
-    Droplet *bigger = nullptr, *smaller = nullptr; // head, tail
-    Droplet *above = nullptr, *below = nullptr;    // head, tail
-    Droplet *left = nullptr, *right = nullptr;     // head, tail
+    Particle *bigger = nullptr, *smaller = nullptr; // head, tail
+    Particle *above = nullptr, *below = nullptr;    // head, tail
+    Particle *left = nullptr, *right = nullptr;     // head, tail
 
-    void setAbove(Droplet *drp);
-    void setBelow(Droplet *drp);
+    void setAbove(Particle *drp);
+    void setBelow(Particle *drp);
 
-    Droplet(double radius, double coord[]);
-    virtual ~Droplet();
+    Particle(double radius, double coord[]);
+    virtual ~Particle();
     void deleteInstance();
 
     double getCoord(int axis) const { return this->coord[axis]; }
@@ -57,12 +57,12 @@ class Droplet {
     double getMass() const { return this->mass; }
     double getVelocity() const { return this->velocity; }
 
-    Droplet *getFinalMergred();
+    Particle *getFinalMergred();
 
     double growCondensation();
-    void merge(std::vector<Droplet *> *list);
+    void merge(std::vector<Particle *> *list);
     void fallBy(double way);
-    void setMergedInto(Droplet *drp);
+    void setMergedInto(Particle *drp);
 };
 
-#endif /* DROPLET_H_ */
+#endif /* PARTICLE_H_ */

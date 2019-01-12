@@ -1,7 +1,7 @@
 /*
  * main.cpp
  *
- *  Created on: Dec 16, 2018
+ *  Created on: Jan 12, 2019
  */
 
 #include <float.h> // DLB_MIN + DBL_MAX
@@ -11,8 +11,8 @@
 #include <time.h>   // seed for rand
 #include <vector>
 
-#include "Droplet.h"
 #include "Global.h"
+#include "Particle.h"
 
 #ifdef USE_OPENCV
 #include <opencv4/opencv2/opencv.hpp>
@@ -28,32 +28,32 @@ long currentMicroSec() {
 
 void update() {
     // grow condensation
-    Droplet *growDrop = Droplet::bigger_h;
+    Particle *growDrop = Particle::bigger_h;
     while (growDrop != nullptr) {
         growDrop->growCondensation();
         growDrop = growDrop->smaller;
     }
 
     // (plain) falling
-    vector<Droplet *> to_delete{};
-    for (Droplet *fallDrop : *Droplet::dropList) {
+    vector<Particle *> to_delete{};
+    for (Particle *fallDrop : *Particle::dropList) {
         fallDrop->fallBy(fallDrop->getVelocity());
         if (fallDrop->getCoordPre(1) >= ENVIRONMENT_HEIGHT) {
             to_delete.push_back(fallDrop);
         }
     }
-    for (Droplet *fallDrop : to_delete) {
+    for (Particle *fallDrop : to_delete) {
         fallDrop->deleteInstance();
     }
-    Droplet::sortListHeight();
+    Particle::sortListHeight();
 
     // merging
-    Droplet *mergeDrop = Droplet::bigger_h;
+    Particle *mergeDrop = Particle::bigger_h;
     while (mergeDrop != nullptr) {
-        vector<Droplet *> potentialDrps;
+        vector<Particle *> potentialDrps;
 
         // above
-        Droplet *tempDrop = mergeDrop->above;
+        Particle *tempDrop = mergeDrop->above;
         double bound = mergeDrop->getCoordPre(1) - 2. * mergeDrop->getRadius();
         while (tempDrop != nullptr && (tempDrop->getCoord(1) >= bound)) {
             potentialDrps.push_back(tempDrop);
@@ -70,13 +70,13 @@ void update() {
 
         // calculate closest distance within the last time step between
         // mergeDrop and potential drops
-        vector<Droplet *> toMerge;
+        vector<Particle *> toMerge;
         // [m/2] assuming only height change and always falling down (+)
         double mD_velo = mergeDrop->getCoord(1) - mergeDrop->getCoordPre(1);
         double widthBound[2] = {
             mergeDrop->getCoord(0) - 2. * mergeDrop->getRadius(),
             mergeDrop->getCoord(0) + 2. * mergeDrop->getRadius()};
-        for (Droplet *d : potentialDrps) {
+        for (Particle *d : potentialDrps) {
             // check if drop even in horizontal range
             if ((d->getCoord(0) < widthBound[0]) ||
                 (d->getCoord(0) > widthBound[1]))
@@ -105,24 +105,24 @@ void update() {
         mergeDrop->merge(&toMerge);
         mergeDrop = mergeDrop->smaller;
     }
-    Droplet::sortListSize();
-    Droplet::sortListWidth();
+    Particle::sortListSize();
+    Particle::sortListWidth();
 }
 
 void clearEnvironment() {
     printf("Clearing environment...\n");
     fflush(stdout);
-    for (Droplet *d : *Droplet::dropList) {
+    for (Particle *d : *Particle::dropList) {
         delete d;
     }
-    Droplet::dropList->clear();
+    Particle::dropList->clear();
 
-    Droplet::bigger_h = nullptr;  // head
-    Droplet::smaller_h = nullptr; // tail
-    Droplet::above_h = nullptr;   // head
-    Droplet::below_h = nullptr;   // tail
-    Droplet::left_h = nullptr;    // head
-    Droplet::right_h = nullptr;   // tail
+    Particle::bigger_h = nullptr;  // head
+    Particle::smaller_h = nullptr; // tail
+    Particle::above_h = nullptr;   // head
+    Particle::below_h = nullptr;   // tail
+    Particle::left_h = nullptr;    // head
+    Particle::right_h = nullptr;   // tail
 }
 
 double getRandom() { return ((double)random()) / ((double)RAND_MAX); }
@@ -161,8 +161,8 @@ int main(int, char **) {
         if (tempSize < tSmin)
             tSmin = tempSize;
 
-        Droplet *tempDrop = new Droplet(tempSize / 2., tempCoord);
-        Droplet::dropList->push_back(tempDrop);
+        Particle *tempDrop = new Particle(tempSize / 2., tempCoord);
+        Particle::dropList->push_back(tempDrop);
 
         dCount++;
         if (dCount % ((int)ENVIRONMENT_SPAWN_DROPS_TOTAL / 10) == 0) {
@@ -172,9 +172,9 @@ int main(int, char **) {
     }
     printf("min: %f | max: %f [µm]\n", tSmin * 1.E6, tSmax * 1.E6);
     printf("Sorting...\n");
-    Droplet::sortListWidth();
-    Droplet::sortListHeight();
-    Droplet::sortListSize();
+    Particle::sortListWidth();
+    Particle::sortListHeight();
+    Particle::sortListSize();
 
     // init openCV
     int visu_width = ENVIRONMENT_WIDTH * VISU_WIDTH_PX_PER_METER;
@@ -197,11 +197,11 @@ int main(int, char **) {
         (M_PI * 4. / 3.) * ENVIRONMENT_SPAWN_DROPS_TOTAL /
         (visu_width * visu_height);
     printf("starting simulation... (meanTotalMassPerPx/biggestDropMass = %f)\n",
-           meanTotalMassPerPx / Droplet::bigger_h->getMass());
+           meanTotalMassPerPx / Particle::bigger_h->getMass());
     long startTimeStamp = currentMicroSec();
     for (int t = 0; t <= SIMULATION_TIME_MAX; t++) { // [s]
         update();
-        if (Droplet::disposedDrops >= ENVIRONMENT_SPAWN_DROPS_TOTAL) {
+        if (Particle::disposedDrops >= ENVIRONMENT_SPAWN_DROPS_TOTAL) {
             printf("No drops remaining. Exiting...\n");
             break;
         }
@@ -215,7 +215,7 @@ int main(int, char **) {
             auto count_drop = init_matrix<int>(visu_width, visu_height, 0);
 
             double avgSize = 0.;
-            Droplet *currentDrop = Droplet::left_h;
+            Particle *currentDrop = Particle::left_h;
             int pixels_with_droplets = 0;
             int count_drop_max = 0;
             while (currentDrop != nullptr) {
@@ -239,7 +239,7 @@ int main(int, char **) {
 
                 currentDrop = currentDrop->right;
             }
-            avgSize *= 2. * 1.E3 / (double)Droplet::remainingDrops();
+            avgSize *= 2. * 1.E3 / (double)Particle::remainingDrops();
 
             // visualization
             double avgColor = 0.;
@@ -257,7 +257,7 @@ int main(int, char **) {
                         (colorTotalMass > 255) ? 255 : colorTotalMass;
 
                     double maxMassRatio =
-                        max_mass[w][h] / Droplet::bigger_h->getMass();
+                        max_mass[w][h] / Particle::bigger_h->getMass();
                     // maxMassRatio =
                     //    (log10(maxMassRatio + 0.1) + 1) / (log10(1.1) + 1);
                     int colorMaxMass = (int)(255. * maxMassRatio);
@@ -295,11 +295,11 @@ int main(int, char **) {
                 "time: %d [s] | drop size (avg/max): %f/%f [mm] | avgColor: %f "
                 "[0-256[ | remaining drops: %d"
                 " | lowest height: %f [m] (ETA: %ldm %lds)\n",
-                t, avgSize, Droplet::bigger_h->getRadius() * 2. * 1.E3,
-                avgColor, Droplet::remainingDrops(),
-                (Droplet::below_h == nullptr)
+                t, avgSize, Particle::bigger_h->getRadius() * 2. * 1.E3,
+                avgColor, Particle::remainingDrops(),
+                (Particle::below_h == nullptr)
                     ? -1
-                    : (ENVIRONMENT_HEIGHT - Droplet::below_h->getCoord(1)),
+                    : (ENVIRONMENT_HEIGHT - Particle::below_h->getCoord(1)),
                 eta_seconds / 60, eta_seconds % 60);
             fflush(stdout);
         }
