@@ -28,6 +28,8 @@ class Particle {
                                       std::vector<double> v2,
                                       std::vector<double> v3);
     static std::vector<double> multVec(std::vector<double> v1, double scalar);
+    static std::vector<double> RungeKutta1(std::vector<double> distance,
+                                           double mass);
     static std::vector<double> RungeKutta4(std::vector<double> distance,
                                            double mass);
     static std::vector<double> RungeKutta5(std::vector<double> distance,

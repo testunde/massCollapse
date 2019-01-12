@@ -48,6 +48,11 @@ vector<double> Particle::multVec(vector<double> v1, double scalar) {
     return result;
 }
 
+vector<double> Particle::RungeKutta1(vector<double> distance, double mass) {
+    vector<double> result = accelByDistance(distance, mass);
+    return result;
+}
+
 vector<double> Particle::RungeKutta4(vector<double> distance, double mass) {
     vector<double> F1 = accelByDistance(distance, mass);
     vector<double> F2 =
