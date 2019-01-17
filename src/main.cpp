@@ -18,6 +18,10 @@
 #include <opencv4/opencv2/opencv.hpp>
 #endif
 
+#ifdef USE_OPENMP
+#include <parallel/algorithm> // __gnu_parallel::for_each()
+#endif
+
 using namespace std;
 
 long currentMicroSec() {
@@ -35,12 +39,24 @@ long simplePowBase2(int e) {
 
 void update() {
     // velocity
+#ifdef USE_OPENMP
+    __gnu_parallel::for_each(Particle::particleList->begin(),
+                             Particle::particleList->end(),
+                             [&](Particle *p) { p->updateVelocity(); });
+#else
     for (Particle *p : *Particle::particleList)
         p->updateVelocity();
+#endif
 
     // position
+#ifdef USE_OPENMP
+    __gnu_parallel::for_each(Particle::particleList->begin(),
+                             Particle::particleList->end(),
+                             [&](Particle *p) { p->updatePosition(); });
+#else
     for (Particle *p : *Particle::particleList)
         p->updatePosition();
+#endif
 }
 
 void clearEnvironment() {

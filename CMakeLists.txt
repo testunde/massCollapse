@@ -19,8 +19,22 @@ if(OpenCV_FOUND)
     target_compile_definitions(masscollapse PUBLIC USE_OPENCV)
     target_link_libraries(masscollapse "opencv_core" "opencv_videoio" "opencv_highgui")
 else(OpenCV_FOUND)
-    message("Build without OpenCV")
+    message("Build withOUT OpenCV")
 endif(OpenCV_FOUND)
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	# OpenMP
+	find_package(OpenMP)
+	if (OpenMP_FOUND)
+	    message("Build with OpenMP")
+	    target_compile_definitions(masscollapse PUBLIC USE_OPENMP)
+	    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+	    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+	    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+	else(OpenMP_FOUND)
+	    message("Build withOUT OpenMP")
+	endif(OpenMP_FOUND)
+endif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 
 # clang format
 file(GLOB_RECURSE ALL_SOURCE_FILES src/*.cpp src/*.h)
