@@ -80,11 +80,13 @@ template <class T> vector<vector<T>> init_matrix(int a, int b, T v) {
 }
 
 int main(int, char **) {
-    srand(time(nullptr));
+    unsigned int rndSeed = time(nullptr);
+    srand(rndSeed);
     normal_distribution<double> distribution(
         ENVIRONMENT_SPAWN_PARTICLE_MASS,
         ENVIRONMENT_SPAWN_PARTICLE_MASS_STD_2 * .5);
     default_random_engine rnd_gen;
+    rnd_gen.seed(rndSeed);
 
 #ifdef USE_OPENMP
     printf("Using parallelisation by OpenMP.\n");
@@ -92,6 +94,7 @@ int main(int, char **) {
 
     // initialize environment
     printf("Initialize environment + generate particles...\n");
+    printf("Using seed for random generators: %u\n", rndSeed);
 
     // generate particles
     int dCount = 0;
