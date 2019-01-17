@@ -5,7 +5,9 @@ fields.
 ## Build Instructions
 
 ## Dependencies
-OpenCV v4 (can be disabled in src/global.h; for older versions the source code may be adopted)
+OpenCV v4 (for older versions the source code may be adopted)
+
+OpenMP (only for gcc compiler and if parallelisation desired)
 
 ### Configure
 Use a out-of-tree build to not pollute your checkout:
@@ -47,7 +49,7 @@ Usually, you do NOT need to re-run cmake.
 ```
 
 ## Developer Notes
--
+Do `export OMP_NUM_THREADS=X` before execution to run program on X threads, if OpenMP is available and compiled with gcc.
 
 ## Auto-Format
 ```
