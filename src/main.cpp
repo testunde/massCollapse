@@ -77,16 +77,14 @@ int main(int, char **) {
     int dCount = 0;
     double tMmax = DBL_MIN, tMmin = DBL_MAX;
     for (int c = 0; c < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; c++) {
-        double tempCoord[] = {getRandom() * ENVIRONMENT_WIDTH,
-                              getRandom() * ENVIRONMENT_HEIGHT};
-        double tempCoordCenter[] = {tempCoord[0] - ENVIRONMENT_WIDTH * .5,
-                                    tempCoord[1] - ENVIRONMENT_HEIGHT * .5};
-        double coordNorm = sqrt(tempCoordCenter[0] * tempCoordCenter[0] +
-                                tempCoordCenter[1] * tempCoordCenter[1]);
+        double tempCoord[] = {(getRandom() - .5) * ENVIRONMENT_SPAWN_WIDTH,
+                              (getRandom() - .5) * ENVIRONMENT_SPAWN_HEIGHT};
+        double coordNorm =
+            sqrt(tempCoord[0] * tempCoord[0] + tempCoord[1] * tempCoord[1]);
 
-        double tempVel[] = {
-            ENVIRONMENT_SPAWN_START_VELO * (-tempCoordCenter[1]) / coordNorm,
-            ENVIRONMENT_SPAWN_START_VELO * (+tempCoordCenter[0]) / coordNorm};
+        double absVel = ENVIRONMENT_SPAWN_START_ANGULAR_VELO * coordNorm;
+        double tempVel[] = {absVel * (+tempCoord[1]) / coordNorm,
+                            absVel * (-tempCoord[0]) / coordNorm};
         double tempMass = 0.;
         while (abs(tempMass - ENVIRONMENT_SPAWN_PARTICLE_MASS) >
                ENVIRONMENT_SPAWN_PARTICLE_MASS_STD_2) {
@@ -138,10 +136,10 @@ int main(int, char **) {
 
             for (Particle *p : *Particle::particleList) {
                 int idx[2] = {
-                    (int)(p->getPosition(0) * VISU_WIDTH_PX_PER_METER /
-                          OPENCV_VIDEO_SCALE),
-                    (int)(p->getPosition(1) * VISU_HEIGHT_PX_PER_METER /
-                          OPENCV_VIDEO_SCALE)};
+                    (int)((p->getPosition(0) + ENVIRONMENT_WIDTH * .5) *
+                          VISU_WIDTH_PX_PER_METER / OPENCV_VIDEO_SCALE),
+                    (int)((p->getPosition(1) + ENVIRONMENT_HEIGHT * .5) *
+                          VISU_HEIGHT_PX_PER_METER / OPENCV_VIDEO_SCALE)};
                 idx[0] = max(min(idx[0], visu_height - 1), 0);
                 idx[1] = max(min(idx[1], visu_height - 1), 0);
                 total_mass[idx[0]][idx[1]] += p->getMass();
