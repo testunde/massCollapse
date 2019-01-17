@@ -86,6 +86,10 @@ int main(int, char **) {
         ENVIRONMENT_SPAWN_PARTICLE_MASS_STD_2 * .5);
     default_random_engine rnd_gen;
 
+#ifdef USE_OPENMP
+    printf("Using parallelisation by OpenMP.\n");
+#endif
+
     // initialize environment
     printf("Initialize environment + generate particles...\n");
 
@@ -181,7 +185,9 @@ int main(int, char **) {
                               (double)Particle::particleList->size());
 
                     int colorCountParticle2 =
-                        (cP > 0) ? (int)(255. / (double)simplePowBase2(cP)) : 0;
+                        (cP > 0) ? (int)(255. *
+                                         (1. - 1. / (double)simplePowBase2(cP)))
+                                 : 0;
 
                     cv::Vec3b finalColor(0, colorCountParticle2,
                                          colorTotalMass);
