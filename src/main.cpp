@@ -43,32 +43,32 @@ long simplePowBase2(int e) {
     return result;
 }
 
-void update(cl::CommandQueue &queue, cl::Kernel &kernel, cl::Context &context) {
-    int cnt = Particle::particleList->size();
-    p_state states[cnt];
+void update(cl::CommandQueue &queue, cl::Kernel &kernel,
+            cl::Buffer *buffers[2]) {
+    static p_state states[(long)ENVIRONMENT_SPAWN_PARTICLES_TOTAL];
 
-    for (int i = 0; i < cnt; i++)
-        states[i] = (*Particle::particleList)[i]->getCLStruct();
-
-    cl::Buffer bufIn(context, CL_MEM_READ_ONLY, cnt * sizeof(p_state));
-    cl::Buffer bufOut(context, CL_MEM_WRITE_ONLY, cnt * sizeof(p_state));
-    queue.enqueueWriteBuffer(bufIn, CL_TRUE, 0, cnt * sizeof(p_state), states);
-    cl_int er = kernel.setArg(0, bufIn);
+    queue.enqueueCopyBuffer(*buffers[1], *buffers[0], 0, 0,
+                            ENVIRONMENT_SPAWN_PARTICLES_TOTAL *
+                                sizeof(p_state));
+    cl_int er = kernel.setArg(0, *buffers[0]);
     if (er != CL_SUCCESS)
         throw cl::Error(er, "arg0");
-    er = kernel.setArg(1, bufOut);
+    er = kernel.setArg(1, *buffers[1]);
     if (er != CL_SUCCESS)
         throw cl::Error(er, "arg1");
-    er = kernel.setArg(2, cnt);
+    er = kernel.setArg(2, (long)ENVIRONMENT_SPAWN_PARTICLES_TOTAL);
     if (er != CL_SUCCESS)
         throw cl::Error(er, "arg2");
-    queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(cnt),
+    queue.enqueueNDRangeKernel(kernel, cl::NullRange,
+                               cl::NDRange(ENVIRONMENT_SPAWN_PARTICLES_TOTAL),
                                cl::NullRange);
     queue.finish();
 
-    queue.enqueueReadBuffer(bufOut, CL_TRUE, 0, cnt * sizeof(p_state), states);
+    queue.enqueueReadBuffer(*buffers[1], CL_TRUE, 0,
+                            ENVIRONMENT_SPAWN_PARTICLES_TOTAL * sizeof(p_state),
+                            states);
 
-    for (int i = 0; i < cnt; i++)
+    for (int i = 0; i < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; i++)
         Particle::particleList->at(i)->setCLStruct(&states[i]);
 }
 
@@ -206,8 +206,24 @@ int main(int, char **) {
                                     ENVIRONMENT_SPAWN_PARTICLES_TOTAL /
                                     (visu_width * visu_height);
         long startTimeStamp = currentMicroSec();
+
+        cl::Buffer bufIn(context, CL_MEM_READ_ONLY,
+                         ENVIRONMENT_SPAWN_PARTICLES_TOTAL * sizeof(p_state));
+        cl::Buffer bufOut(context, CL_MEM_WRITE_ONLY,
+                          ENVIRONMENT_SPAWN_PARTICLES_TOTAL * sizeof(p_state));
+        cl::Buffer *buffers[2] = {&bufIn, &bufOut};
+
+        {
+            p_state states[(long)ENVIRONMENT_SPAWN_PARTICLES_TOTAL];
+
+            for (int i = 0; i < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; i++)
+                states[i] = (*Particle::particleList)[i]->getCLStruct();
+            queue.enqueueWriteBuffer(
+                bufOut, CL_TRUE, 0,
+                ENVIRONMENT_SPAWN_PARTICLES_TOTAL * sizeof(p_state), states);
+        }
         for (int t = 0; t <= SIMULATION_TIME_MAX; t++) { // [s]
-            update(queue, kernel, context);
+            update(queue, kernel, buffers);
 
             if (t % SIMULATION_TIME_STATS_UPDATE == 0) {
                 // count mass per pixel

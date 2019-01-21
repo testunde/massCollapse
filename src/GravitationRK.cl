@@ -40,7 +40,7 @@ double2 RungeKutta5(double2 distance, double mass) {
     return result;
 }
 
-__kernel void GravitationRK(__global p_state *statesIn, __global p_state *statesOut, const int size) {
+__kernel void GravitationRK(__global p_state *statesIn, __global p_state *statesOut, const long size) {
     int index = get_global_id(0);
     double2 vel = statesIn[index].vel;
     double2 pos = statesIn[index].pos;
