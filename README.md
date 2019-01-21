@@ -9,6 +9,8 @@ OpenCV v4 (for older versions the source code may be adopted)
 
 OpenMP (only for gcc compiler and if parallelisation desired)
 
+OpenCL v1.2 (check that you installed the right OpenCL version depending on your graphics card!)
+
 ### Configure
 Use a out-of-tree build to not pollute your checkout:
 ```
