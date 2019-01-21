@@ -18,6 +18,9 @@
 
 #define SIMULATION_TIME_MAX 3600       // [s]
 #define SIMULATION_TIME_STATS_UPDATE 1 // [s]
+#define SIMULATION_ROUNDS                                                      \
+    1 // 1 round = 2 time steps (2 * 1s), 0 rounds -> only one step per GPU
+      // calculation
 
 #define VISU_WIDTH_PX_PER_METER 800  // [px/m]
 #define VISU_HEIGHT_PX_PER_METER 800 // [px/m]

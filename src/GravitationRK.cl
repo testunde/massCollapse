@@ -40,23 +40,41 @@ double2 RungeKutta5(double2 distance, double mass) {
     return result;
 }
 
-__kernel void GravitationRK(__global p_state *statesIn, __global p_state *statesOut, const long size) {
+__kernel void GravitationRK(__global p_state *statesIn, __global p_state *statesOut, const long size, const int rounds) {
     int index = get_global_id(0);
-    double2 vel = statesIn[index].vel;
-    double2 pos = statesIn[index].pos;
-    
-    double2 finalVel = vel;
-    int i;
-    for(i = 0; i < size; i++) {
-        if (i == index) continue;
-        
-        double2 deltaR = statesIn[i].pos - pos;
-        double2 rk = RungeKutta5(deltaR, statesIn[i].mass);
+    __global p_state *statesPointers[2] = {statesIn, statesOut};
 
-        finalVel += TIME_STEP * rk;
+    int swapCount = (rounds == 0) ? 1 : 2;
+    int roundsCnt = (rounds == 0) ? 1 : rounds;
+
+    int r;
+    for(r = 0; r < roundsCnt; r++) {
+        int r_r;
+        for(r_r = 0; r_r < swapCount; r_r++) {
+            double2 vel = statesPointers[0][index].vel;
+            double2 pos = statesPointers[0][index].pos;
+
+            double2 finalVel = vel;
+            int i;
+            for(i = 0; i < size; i++) {
+                if (i == index) continue;
+
+                double2 deltaR = statesPointers[0][i].pos - pos;
+                double2 rk = RungeKutta5(deltaR, statesIn[i].mass);
+
+                finalVel += TIME_STEP * rk;
+            }
+
+            statesPointers[1][index].pos = pos + TIME_STEP * finalVel;
+            statesPointers[1][index].vel = finalVel;
+            statesPointers[1][index].mass = statesPointers[0][index].mass;
+            
+            barrier(CLK_GLOBAL_MEM_FENCE); //  barrier to sync threads
+            // change pointers
+            __global p_state *temp = statesPointers[0];
+            statesPointers[0] = statesPointers[1];
+            statesPointers[1] = temp;
+            barrier(CLK_GLOBAL_MEM_FENCE); //  barrier to sync threads
+        }
     }
-
-    statesOut[index].pos = pos + TIME_STEP * finalVel;
-    statesOut[index].vel = finalVel;
-    statesOut[index].mass = statesIn[index].mass;
 }
