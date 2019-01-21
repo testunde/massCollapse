@@ -31,3 +31,5 @@
 #else
 #define OPENCV_VIDEO_SCALE 1 // don't change!
 #endif
+
+#define OPENCL_KERNEL_FILE "GravitationRK.cl"

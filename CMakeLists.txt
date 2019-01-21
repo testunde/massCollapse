@@ -22,9 +22,24 @@ else(OpenCV_FOUND)
     message("Build withOUT OpenCV")
 endif(OpenCV_FOUND)
 
+# OpenCL
+include(FindOpenCL)
+find_package(OpenCL REQUIRED)
+include_directories(${OPENCL_INCLUDE_DIR})
+if(OpenCL_FOUND)
+	target_link_libraries(masscollapse ${OPENCL_LIBRARIES})
+    target_compile_definitions(masscollapse PUBLIC USE_OPENCL)
+    message("Build with OpenCL")
+else(OpenCL_FOUND)
+    message("Build withOUT OpenCL")
+endif(OpenCL_FOUND)
+
+# OpenCL Kernel file
+configure_file(src/GravitationRK.cl GravitationRK.cl COPYONLY)
+
+# OpenMP
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	# OpenMP
-	find_package(OpenMP)
+	find_package(OpenMP QUIET)
 	if (OpenMP_FOUND)
 	    message("Build with OpenMP")
 	    target_compile_definitions(masscollapse PUBLIC USE_OPENMP)

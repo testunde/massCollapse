@@ -123,3 +123,17 @@ void Particle::setFixed(bool fixed) {
     if (fixed)
         memset(this->velocity, 0, 2 * sizeof(double));
 }
+
+void Particle::setCLStruct(p_state *st) {
+    // x
+    this->positionPre[0] = this->position[0];
+    this->position[0] = st->pos.x;
+    this->velocity[0] = st->vel.x;
+
+    // y
+    this->positionPre[1] = this->position[1];
+    this->position[1] = st->pos.y;
+    this->velocity[1] = st->vel.y;
+
+    this->mass = st->mass;
+}

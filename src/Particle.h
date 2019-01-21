@@ -10,7 +10,16 @@
 #include "math.h"
 #include <vector>
 
+#define __CL_ENABLE_EXCEPTIONS
+#include <CL/cl.hpp> // for struct definition
+
 #include "Global.h"
+
+typedef struct {
+    cl_double2 pos;
+    cl_double2 vel;
+    cl_double mass;
+} p_state;
 
 class Particle {
   private:
@@ -43,10 +52,18 @@ class Particle {
 
     void updateVelocity();
     void updatePosition();
+    void setCLStruct(p_state *st);
 
     double getPosition(int axis) const { return this->position[axis]; }
     double getVelocity(int axis) const { return this->velocity[axis]; }
     double getMass() const { return this->mass; }
+    p_state getCLStruct() const {
+        p_state st;
+        st.pos = {this->position[0], this->position[1]};
+        st.vel = {this->velocity[0], this->velocity[1]};
+        st.mass = this->mass;
+        return st;
+    };
 
     void setFixed(bool fixed);
 };
