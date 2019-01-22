@@ -54,12 +54,16 @@ vector<double> Particle::RungeKutta1(vector<double> distance, double mass) {
 }
 
 vector<double> Particle::RungeKutta4(vector<double> distance, double mass) {
-    vector<double> F1 = accelByDistance(distance, mass);
+    vector<double> F1 =
+        multVec(accelByDistance(distance, mass), SIMULATION_TIME_PER_STEP);
     vector<double> F2 =
-        accelByDistance(addVec(distance, multVec(F1, .5)), mass);
+        multVec(accelByDistance(addVec(distance, multVec(F1, .5)), mass),
+                SIMULATION_TIME_PER_STEP);
     vector<double> F3 =
-        accelByDistance(addVec(distance, multVec(F2, .5)), mass);
-    vector<double> F4 = accelByDistance(addVec(distance, F3), mass);
+        multVec(accelByDistance(addVec(distance, multVec(F2, .5)), mass),
+                SIMULATION_TIME_PER_STEP);
+    vector<double> F4 = multVec(accelByDistance(addVec(distance, F3), mass),
+                                SIMULATION_TIME_PER_STEP);
 
     vector<double> result = {(F1[0] + 2. * (F2[0] + F3[0]) + F4[0]) / 6.,
                              (F1[1] + 2. * (F2[1] + F3[1]) + F4[1]) / 6.};
@@ -67,20 +71,31 @@ vector<double> Particle::RungeKutta4(vector<double> distance, double mass) {
 }
 
 vector<double> Particle::RungeKutta5(vector<double> distance, double mass) {
-    vector<double> F1 = accelByDistance(distance, mass);
+    vector<double> F1 =
+        multVec(accelByDistance(distance, mass), SIMULATION_TIME_PER_STEP);
     vector<double> F2 =
-        accelByDistance(addVec(distance, multVec(F1, .25)), mass);
-    vector<double> F3 = accelByDistance(
-        addVec(distance, multVec(F1, .125), multVec(F2, .125)), mass);
+        multVec(accelByDistance(addVec(distance, multVec(F1, .25)), mass),
+                SIMULATION_TIME_PER_STEP);
+    vector<double> F3 = multVec(
+        accelByDistance(addVec(distance, multVec(F1, .125), multVec(F2, .125)),
+                        mass),
+        SIMULATION_TIME_PER_STEP);
     vector<double> F4 =
-        accelByDistance(addVec(distance, multVec(F2, -.5), F3), mass);
-    vector<double> F5 = accelByDistance(
-        addVec(distance, multVec(F1, 3. / 16.), multVec(F4, 9. / 16.)), mass);
-    vector<double> F6 = accelByDistance(
-        addVec(addVec(distance, multVec(F1, -3. / 7.), multVec(F2, 2. / 7.)),
-               addVec(multVec(F3, 12. / 7.), multVec(F4, -12. / 7.),
-                      multVec(F5, 8. / 7.))),
-        mass);
+        multVec(accelByDistance(addVec(distance, multVec(F2, -.5), F3), mass),
+                SIMULATION_TIME_PER_STEP);
+    vector<double> F5 =
+        multVec(accelByDistance(addVec(distance, multVec(F1, 3. / 16.),
+                                       multVec(F4, 9. / 16.)),
+                                mass),
+                SIMULATION_TIME_PER_STEP);
+    vector<double> F6 =
+        multVec(accelByDistance(
+                    addVec(addVec(distance, multVec(F1, -3. / 7.),
+                                  multVec(F2, 2. / 7.)),
+                           addVec(multVec(F3, 12. / 7.), multVec(F4, -12. / 7.),
+                                  multVec(F5, 8. / 7.))),
+                    mass),
+                SIMULATION_TIME_PER_STEP);
 
     vector<double> result = {
         (7. * (F1[0] + F6[0]) + 32. * (F3[0] + F5[0]) + 12. * F4[0]) / 90.,
@@ -114,8 +129,8 @@ void Particle::updatePosition() {
 
     memcpy(this->positionPre, this->position, 2 * sizeof(double));
 
-    this->position[0] += this->velocity[0];
-    this->position[1] += this->velocity[1];
+    this->position[0] += SIMULATION_TIME_PER_STEP * this->velocity[0];
+    this->position[1] += SIMULATION_TIME_PER_STEP * this->velocity[1];
 }
 
 void Particle::setFixed(bool fixed) {
