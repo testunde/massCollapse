@@ -79,29 +79,39 @@ template <class T> vector<vector<T>> init_matrix(int a, int b, T v) {
     return matrix;
 }
 
-int main(int, char **) {
-    unsigned int rndSeed = time(nullptr);
-    srand(rndSeed);
-    normal_distribution<double> distribution(
-        ENVIRONMENT_SPAWN_PARTICLE_MASS,
-        ENVIRONMENT_SPAWN_PARTICLE_MASS_STD_2 * .5);
-    default_random_engine rnd_gen;
-    rnd_gen.seed(rndSeed);
+void generateParticles(const int form,
+                       normal_distribution<double> &distribution,
+                       default_random_engine &rnd_gen) {
 
-#ifdef USE_OPENMP
-    printf("Using parallelisation by OpenMP.\n");
-#endif
-
-    // initialize environment
-    printf("Initialize environment + generate particles...\n");
-    printf("Using seed for random generators: %u\n", rndSeed);
-
-    // generate particles
+    normal_distribution<double> distributionEllipse(0., 1.);
     int dCount = 0;
     double tMmax = DBL_MIN, tMmin = DBL_MAX;
     for (int c = 0; c < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; c++) {
-        double tempCoord[] = {(getRandom() - .5) * ENVIRONMENT_SPAWN_WIDTH,
-                              (getRandom() - .5) * ENVIRONMENT_SPAWN_HEIGHT};
+        double tempCoord[] = {0., 0.};
+        double theta, radius;
+        switch (form) {
+        case 2: // concentrated ellipse
+            theta = getRandom() * 2. * M_PI;
+            radius = 1 - pow(cos(getRandom() * M_PI_2), 0.5);
+            tempCoord[0] =
+                sqrt(radius) * .5 * ENVIRONMENT_SPAWN_WIDTH * cos(theta);
+            tempCoord[1] =
+                sqrt(radius) * .5 * ENVIRONMENT_SPAWN_HEIGHT * sin(theta);
+            break;
+        case 1: // ellipse
+            theta = getRandom() * 2. * M_PI;
+            radius = getRandom();
+            tempCoord[0] =
+                sqrt(radius) * .5 * ENVIRONMENT_SPAWN_WIDTH * cos(theta);
+            tempCoord[1] =
+                sqrt(radius) * .5 * ENVIRONMENT_SPAWN_HEIGHT * sin(theta);
+            break;
+        case 0: // square
+        default:
+            tempCoord[0] = (getRandom() - .5) * ENVIRONMENT_SPAWN_WIDTH;
+            tempCoord[1] = (getRandom() - .5) * ENVIRONMENT_SPAWN_HEIGHT;
+            break;
+        }
         double coordNorm =
             sqrt(tempCoord[0] * tempCoord[0] + tempCoord[1] * tempCoord[1]);
 
@@ -130,6 +140,28 @@ int main(int, char **) {
         }
     }
     printf("min: %f | max: %f [kg]\n", tMmin, tMmax);
+}
+
+int main(int, char **) {
+    unsigned int rndSeed = time(nullptr);
+    srand(rndSeed);
+    normal_distribution<double> distribution(
+        ENVIRONMENT_SPAWN_PARTICLE_MASS,
+        ENVIRONMENT_SPAWN_PARTICLE_MASS_STD_2 * .5);
+    default_random_engine rnd_gen;
+    rnd_gen.seed(rndSeed);
+
+#ifdef USE_OPENMP
+    printf("Using parallelisation by OpenMP.\n");
+#endif
+
+    // initialize environment
+    printf("Initialize environment + generate particles...\n");
+    printf("Using seed for random generators: %u\n", rndSeed);
+
+    // generate particles
+    if (ENVIRONMENT_SPAWN_FORM >= 0 && ENVIRONMENT_SPAWN_FORM <= 2)
+        generateParticles(ENVIRONMENT_SPAWN_FORM, distribution, rnd_gen);
 
     // init openCV
     int visu_width = ENVIRONMENT_WIDTH * VISU_WIDTH_PX_PER_METER;
