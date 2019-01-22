@@ -15,6 +15,8 @@
 #define ENVIRONMENT_SPAWN_PARTICLE_MASS_STD_2 1.8E1 // [kg] (2*std)
 #define ENVIRONMENT_SPAWN_START_ANGULAR_VELO                                   \
     -2.E-3 // [m/2] (orthogonal towards the center)
+#define ENVIRONMENT_SPAWN_FORM                                                 \
+    2 // 0: square, 1: ellipse, 2: concentrated ellipse, 3: spiral galaxy
 
 #define SIMULATION_TIME_MAX 3600       // [s]
 #define SIMULATION_TIME_STATS_UPDATE 1 // [simulation_time_per_step's]
