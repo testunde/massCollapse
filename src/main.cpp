@@ -130,6 +130,7 @@ void generateParticles(const int form,
     int dCount = 0;
     double tMmax = DBL_MIN, tMmin = DBL_MAX;
     for (int c = 0; c < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; c++) {
+        // initial position by distribution and form
         double tempCoord[] = {0., 0.};
         double theta, radius;
         switch (form) {
@@ -158,7 +159,22 @@ void generateParticles(const int form,
         double coordNorm =
             sqrt(tempCoord[0] * tempCoord[0] + tempCoord[1] * tempCoord[1]);
 
-        double absVel = ENVIRONMENT_SPAWN_START_ANGULAR_VELO * coordNorm;
+        // initial velocity by function
+        double absVel = 0;
+        switch (ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION) {
+        case 1:
+            absVel = sqrt(GRAVITAIONAL_CONSTANT *
+                          (ENVIRONMENT_SPAWN_PARTICLES_TOTAL *
+                           ENVIRONMENT_SPAWN_PARTICLE_MASS) *
+                          coordNorm) *
+                     2;
+            break;
+        case 0:
+        default:
+            absVel = ENVIRONMENT_SPAWN_START_ANGULAR_VELO * coordNorm;
+            break;
+        }
+
         double tempVel[] = {absVel * (+tempCoord[1]) / coordNorm,
                             absVel * (-tempCoord[0]) / coordNorm};
         double tempMass = 0.;
