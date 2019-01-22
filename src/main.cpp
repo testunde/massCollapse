@@ -46,10 +46,12 @@ long simplePowBase2(int e) {
 void update(cl::CommandQueue &queue, cl::Kernel &kernel,
             cl::Buffer *buffers[2]) {
     static p_state states[(long)ENVIRONMENT_SPAWN_PARTICLES_TOTAL];
+    static bool roundOdd = SIMULATION_ROUNDS % 2 == 1;
 
     queue.enqueueCopyBuffer(*buffers[1], *buffers[0], 0, 0,
                             ENVIRONMENT_SPAWN_PARTICLES_TOTAL *
                                 sizeof(p_state));
+
     cl_int er = kernel.setArg(0, *buffers[0]);
     if (er != CL_SUCCESS)
         throw cl::Error(er, "arg0");
@@ -62,10 +64,20 @@ void update(cl::CommandQueue &queue, cl::Kernel &kernel,
     er = kernel.setArg(3, SIMULATION_ROUNDS);
     if (er != CL_SUCCESS)
         throw cl::Error(er, "arg3");
+    er = kernel.setArg(4, SIMULATION_TIME_PER_STEP);
+    if (er != CL_SUCCESS)
+        throw cl::Error(er, "arg4");
     queue.enqueueNDRangeKernel(kernel, cl::NullRange,
                                cl::NDRange(ENVIRONMENT_SPAWN_PARTICLES_TOTAL),
                                cl::NullRange);
     queue.finish();
+
+    if (!roundOdd) {
+        // has to be done this way, otherwise *buffers[0] ends up being empty
+        queue.enqueueCopyBuffer(*buffers[0], *buffers[1], 0, 0,
+                                ENVIRONMENT_SPAWN_PARTICLES_TOTAL *
+                                    sizeof(p_state));
+    }
 
     queue.enqueueReadBuffer(*buffers[1], CL_TRUE, 0,
                             ENVIRONMENT_SPAWN_PARTICLES_TOTAL * sizeof(p_state),
@@ -163,7 +175,6 @@ int main(int, char **) {
     printf("min: %f | max: %f [kg]\n", tMmin, tMmax);
 
     // init openCV
-    int secondsPerStep = (SIMULATION_ROUNDS == 0) ? 1 : SIMULATION_ROUNDS * 2;
     int visu_width = ENVIRONMENT_WIDTH * VISU_WIDTH_PX_PER_METER;
     int visu_height = ENVIRONMENT_HEIGHT * VISU_HEIGHT_PX_PER_METER;
 #ifdef USE_OPENCV
@@ -171,7 +182,7 @@ int main(int, char **) {
     cv::Mat envVisu(visu_height, visu_width, CV_8UC3);
     cv::VideoWriter video(OPENCV_VIDEO_FILENAME,
                           cv::VideoWriter::fourcc(OPENCV_VIDEO_FORMAT),
-                          OPENCV_VIDEO_SECONDS_PER_SECOND / secondsPerStep,
+                          OPENCV_VIDEO_SECONDS_PER_SECOND / SIMULATION_ROUNDS,
                           cv::Size(visu_width, visu_height));
     visu_width /= OPENCV_VIDEO_SCALE;
     visu_height /= OPENCV_VIDEO_SCALE;
@@ -212,9 +223,9 @@ int main(int, char **) {
                                     (visu_width * visu_height);
         long startTimeStamp = currentMicroSec();
 
-        cl::Buffer bufIn(context, CL_MEM_READ_ONLY,
+        cl::Buffer bufIn(context, CL_MEM_READ_WRITE,
                          ENVIRONMENT_SPAWN_PARTICLES_TOTAL * sizeof(p_state));
-        cl::Buffer bufOut(context, CL_MEM_WRITE_ONLY,
+        cl::Buffer bufOut(context, CL_MEM_READ_WRITE,
                           ENVIRONMENT_SPAWN_PARTICLES_TOTAL * sizeof(p_state));
         cl::Buffer *buffers[2] = {&bufIn, &bufOut};
 
@@ -228,7 +239,7 @@ int main(int, char **) {
                 ENVIRONMENT_SPAWN_PARTICLES_TOTAL * sizeof(p_state), states);
         }
         for (int t = 0; t <= SIMULATION_TIME_MAX / SIMULATION_TIME_PER_STEP;
-             t += secondsPerStep) { // [s]
+             t += SIMULATION_ROUNDS) { // [s]
             update(queue, kernel, buffers);
 
             if (t % SIMULATION_TIME_STATS_UPDATE == 0) {
