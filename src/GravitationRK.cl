@@ -16,8 +16,8 @@ __constant double GRAVITAIONAL_CONSTANT = 6.67408E-11; // [m^3 / (kg * s^2)]
 __constant double TIME_STEP = 1.; // [s]
 
 double2 accelByDistance(double2 distance, double mass) {
-    double2 distSqr = distance;//mad(distance, distance, one);
-    double absDeltaRSqr = distSqr.x * distSqr.x + distSqr.y * distSqr.y;
+    double2 distSqr = distance * distance;
+    double absDeltaRSqr = distSqr.x + distSqr.y;
     double massDivRSqr = mass * GRAVITAIONAL_CONSTANT / absDeltaRSqr;
 
     double2 result = distance * massDivRSqr;
