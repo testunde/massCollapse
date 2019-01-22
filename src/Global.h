@@ -17,7 +17,8 @@
     -2.E-3 // [m/2] (orthogonal towards the center)
 
 #define SIMULATION_TIME_MAX 3600       // [s]
-#define SIMULATION_TIME_STATS_UPDATE 1 // [s]
+#define SIMULATION_TIME_PER_STEP 1.0   // [s]
+#define SIMULATION_TIME_STATS_UPDATE 1 // [simulation_time_per_step's]
 
 #define VISU_WIDTH_PX_PER_METER 800  // [px/m]
 #define VISU_HEIGHT_PX_PER_METER 800 // [px/m]

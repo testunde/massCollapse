@@ -149,7 +149,8 @@ int main(int, char **) {
                                 ENVIRONMENT_SPAWN_PARTICLES_TOTAL /
                                 (visu_width * visu_height);
     long startTimeStamp = currentMicroSec();
-    for (int t = 0; t <= SIMULATION_TIME_MAX; t++) { // [s]
+    for (int t = 0; t <= SIMULATION_TIME_MAX / SIMULATION_TIME_PER_STEP;
+         t++) { // [s]
         update();
 
         if (t % SIMULATION_TIME_STATS_UPDATE == 0) {
@@ -213,10 +214,12 @@ int main(int, char **) {
 
             long currentTimeStamp = currentMicroSec();
             long eta_seconds =
-                (long)((SIMULATION_TIME_MAX - (long)t) *
+                (long)(((SIMULATION_TIME_MAX / SIMULATION_TIME_PER_STEP) -
+                        (long)t) *
                        (currentTimeStamp - startTimeStamp) / (1E6L * (long)t));
-            printf("time: %d [s] | avgColor: %f [0-256[ (ETA: %ldm %lds)\n", t,
-                   avgColor, eta_seconds / 60, eta_seconds % 60);
+            printf("time: %f [s] | avgColor: %f [0-256[ (ETA: %ldm %lds)\n",
+                   ((float)t) * SIMULATION_TIME_PER_STEP, avgColor,
+                   eta_seconds / 60, eta_seconds % 60);
             fflush(stdout);
         }
     }
