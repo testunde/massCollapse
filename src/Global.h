@@ -16,7 +16,8 @@
 #define ENVIRONMENT_SPAWN_START_ANGULAR_VELO                                   \
     -2.E-3 // [m/2] (orthogonal towards the center)
 #define ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION                     \
-    0 // 0: plain angular function (alpha * radius), 1: sqrt(GM*radius)*2
+    2 // 0: plain angular function (alpha * radius), 1: circular orbit
+      // sqrt(GM*radius)*2, 2: RungeKutta5 (-> by grav. force)
 #define ENVIRONMENT_SPAWN_FORM                                                 \
     2 // 0: square, 1: ellipse, 2: concentrated ellipse, 3: spiral galaxy
 
