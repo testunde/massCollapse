@@ -128,6 +128,7 @@ void generateParticles(const int form,
 
     normal_distribution<double> distributionEllipse(0., 1.);
     int dCount = 0;
+    double maxVel = 0.;
     double tMmax = DBL_MIN, tMmin = DBL_MAX;
     for (int c = 0; c < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; c++) {
         // initial position by distribution and form
@@ -160,20 +161,24 @@ void generateParticles(const int form,
             sqrt(tempCoord[0] * tempCoord[0] + tempCoord[1] * tempCoord[1]);
 
         // initial velocity by function
-        double absVel = 0;
+        double absVel = 0.;
         switch (ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION) {
-        case 1:
+        case 2: // RungeKutta5 (after all points are generated)
+            break;
+        case 1: // circular orbit sqrt(GM*radius)*2
             absVel = sqrt(GRAVITAIONAL_CONSTANT *
                           (ENVIRONMENT_SPAWN_PARTICLES_TOTAL *
                            ENVIRONMENT_SPAWN_PARTICLE_MASS) *
                           coordNorm) *
                      2;
             break;
-        case 0:
+        case 0: // plain angular function (alpha * radius)
         default:
             absVel = ENVIRONMENT_SPAWN_START_ANGULAR_VELO * coordNorm;
             break;
         }
+        if (absVel > maxVel)
+            maxVel = absVel;
 
         double tempVel[] = {absVel * (+tempCoord[1]) / coordNorm,
                             absVel * (-tempCoord[0]) / coordNorm};
@@ -198,7 +203,31 @@ void generateParticles(const int form,
             fflush(stdout);
         }
     }
-    printf("min: %f | max: %f [kg]\n", tMmin, tMmax);
+    printf("min mass: %f | max mass: %f [kg]\n", tMmin, tMmax);
+
+    if (ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION == 2) { // RK5
+        for (Particle *p : *Particle::particleList) {
+            vector<double> gravForce = p->getcurrentGravForce();
+            // assuming force points to center, since average position of
+            // generated particles should be the center
+            double fNorm =
+                sqrt(gravForce[0] * gravForce[0] + gravForce[1] * gravForce[1]);
+            double pNorm = sqrt(p->getPosition(0) * p->getPosition(0) +
+                                p->getPosition(1) * p->getPosition(1));
+
+            double absVel =
+                sqrt(fNorm * pNorm); // by circular orbit eq. and grav. force
+
+            if (absVel > maxVel)
+                maxVel = absVel;
+
+            vector<double> tempVel = {absVel * (+p->getPosition(1)) / pNorm,
+                                      absVel * (-p->getPosition(0)) / pNorm};
+
+            p->setVelocity(tempVel);
+        }
+    }
+    printf("max velocity: %f [m/s]\n", maxVel);
 }
 
 int main(int, char **) {
