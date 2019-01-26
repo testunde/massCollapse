@@ -163,26 +163,37 @@ void generateParticles(const int form,
     printf("min mass: %f | max mass: %f [kg]\n", tMmin, tMmax);
 
     if (ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION == 2) { // RK5
+#ifdef USE_OPENMP
+        __gnu_parallel::for_each(
+            Particle::particleList->begin(), Particle::particleList->end(),
+            [&](Particle *p) {
+#else
         for (Particle *p : *Particle::particleList) {
-            vector<double> gravForce = p->getcurrentGravForce();
-            // assuming force points to center, since average position of
-            // generated particles should be the center
-            double fNorm =
-                sqrt(gravForce[0] * gravForce[0] + gravForce[1] * gravForce[1]);
-            double pNorm = sqrt(p->getPosition(0) * p->getPosition(0) +
-                                p->getPosition(1) * p->getPosition(1));
+#endif
+                vector<double> gravForce = p->getcurrentGravForce();
+                // assuming force points to center, since average position of
+                // generated particles should be the center
+                double fNorm = sqrt(gravForce[0] * gravForce[0] +
+                                    gravForce[1] * gravForce[1]);
+                double pNorm = sqrt(p->getPosition(0) * p->getPosition(0) +
+                                    p->getPosition(1) * p->getPosition(1));
 
-            double absVel =
-                sqrt(fNorm * pNorm); // by circular orbit eq. and grav. force
+                double absVel = sqrt(
+                    fNorm * pNorm); // by circular orbit eq. and grav. force eq.
 
-            if (absVel > maxVel)
-                maxVel = absVel;
+                if (absVel > maxVel)
+                    maxVel = absVel;
 
-            vector<double> tempVel = {absVel * (+p->getPosition(1)) / pNorm,
-                                      absVel * (-p->getPosition(0)) / pNorm};
+                vector<double> tempVel = {absVel * (+p->getPosition(1)) / pNorm,
+                                          absVel * (-p->getPosition(0)) /
+                                              pNorm};
 
-            p->setVelocity(tempVel);
+                p->setVelocity(tempVel);
+#ifdef USE_OPENMP
+            });
+#else
         }
+#endif
     }
     printf("max velocity: %f [m/s]\n", maxVel);
 }
