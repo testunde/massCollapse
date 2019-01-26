@@ -21,6 +21,9 @@
 #define ENVIRONMENT_SPAWN_FORM                                                 \
     2 // 0: square, 1: ellipse, 2: concentrated ellipse, 3: spiral galaxy
 
+#define GALAXY_SPIRAL_NUM 5
+#define GALAXY_SPIRAL_WIDTH 0.1 // [m]
+
 #define SIMULATION_TIME_MAX 3600       // [s]
 #define SIMULATION_TIME_PER_STEP 1.0   // [s]
 #define SIMULATION_TIME_STATS_UPDATE 1 // [simulation_time_per_step's]

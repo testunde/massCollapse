@@ -79,34 +79,65 @@ template <class T> vector<vector<T>> init_matrix(int a, int b, T v) {
     return matrix;
 }
 
-void generateParticles(const int form,
-                       normal_distribution<double> &distribution,
-                       default_random_engine &rnd_gen) {
+double sign(double x) { return (double)((x > 0.) - (x < 0.)); }
 
-    normal_distribution<double> distributionEllipse(0., 1.);
+void getSpiralPoint(double result[2], int c, int max,
+                    default_random_engine &rnd_gen) {
+    normal_distribution<double> distribution(0., .5);
+    int cMax = max / GALAXY_SPIRAL_NUM;
+    int cCupped = c % cMax;
+
+    double theta =
+        ((double)c / (double)cMax) * (M_PI * 2. / (double)GALAXY_SPIRAL_NUM);
+    double theta2 = ((double)(c + 1) / (double)cMax) *
+                    (M_PI * 2. / (double)GALAXY_SPIRAL_NUM);
+
+    double radius = 1. - cos(M_PI_2 * (double)cCupped / (double)cMax);
+    double radius2 = 1. - cos(M_PI_2 * (double)(cCupped + 1) / (double)cMax);
+
+    double dx = radius * cos(theta) - radius2 * cos(theta2);
+    double dy = radius * sin(theta) - radius2 * sin(theta2);
+    double dNorm = sqrt(dx * dx + dy * dy);
+    //    double shift = distribution(rnd_gen) * SPIRAL_WIDTH / dNorm;
+    double r = getRandom() - .5;
+    double shift = .5 * sign(r / 2.) * (1. - pow(cos(r * M_PI), 0.5)) *
+                   GALAXY_SPIRAL_WIDTH / dNorm;
+
+    radius = sqrt(radius) * .5;
+    result[0] = (radius * ENVIRONMENT_SPAWN_WIDTH * cos(theta)) + (+dy) * shift;
+    result[1] =
+        (radius * ENVIRONMENT_SPAWN_HEIGHT * sin(theta)) + (-dx) * shift;
+}
+
+void generateParticles(const int form,
+                       normal_distribution<double> &distributionMass,
+                       default_random_engine &rnd_gen) {
     int dCount = 0;
     double maxVel = 0.;
     double tMmax = DBL_MIN, tMmin = DBL_MAX;
     for (int c = 0; c < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; c++) {
         // initial position by distribution and form
-        double tempCoord[] = {0., 0.};
+        double tempCoord[2] = {0., 0.};
         double theta, radius;
+        vector<double> tCoord;
         switch (form) {
+        case 3: // spiral galaxy
+            getSpiralPoint(tempCoord, c, ENVIRONMENT_SPAWN_PARTICLES_TOTAL,
+                           rnd_gen);
+            break;
         case 2: // concentrated ellipse
             theta = getRandom() * 2. * M_PI;
             radius = 1 - pow(cos(getRandom() * M_PI_2), 0.5);
-            tempCoord[0] =
-                sqrt(radius) * .5 * ENVIRONMENT_SPAWN_WIDTH * cos(theta);
-            tempCoord[1] =
-                sqrt(radius) * .5 * ENVIRONMENT_SPAWN_HEIGHT * sin(theta);
+            radius = sqrt(radius) * .5;
+            tempCoord[0] = radius * ENVIRONMENT_SPAWN_WIDTH * cos(theta);
+            tempCoord[1] = radius * ENVIRONMENT_SPAWN_HEIGHT * sin(theta);
             break;
         case 1: // ellipse
             theta = getRandom() * 2. * M_PI;
             radius = getRandom();
-            tempCoord[0] =
-                sqrt(radius) * .5 * ENVIRONMENT_SPAWN_WIDTH * cos(theta);
-            tempCoord[1] =
-                sqrt(radius) * .5 * ENVIRONMENT_SPAWN_HEIGHT * sin(theta);
+            radius = sqrt(radius) * .5;
+            tempCoord[0] = radius * ENVIRONMENT_SPAWN_WIDTH * cos(theta);
+            tempCoord[1] = radius * ENVIRONMENT_SPAWN_HEIGHT * sin(theta);
             break;
         case 0: // square
         default:
@@ -142,7 +173,7 @@ void generateParticles(const int form,
         double tempMass = 0.;
         while (abs(tempMass - ENVIRONMENT_SPAWN_PARTICLE_MASS) >
                ENVIRONMENT_SPAWN_PARTICLE_MASS_STD_2) {
-            tempMass = distribution(rnd_gen);
+            tempMass = distributionMass(rnd_gen);
         }
 
         if (tempMass > tMmax)
@@ -201,7 +232,7 @@ void generateParticles(const int form,
 int main(int, char **) {
     unsigned int rndSeed = time(nullptr);
     srand(rndSeed);
-    normal_distribution<double> distribution(
+    normal_distribution<double> distributionMass(
         ENVIRONMENT_SPAWN_PARTICLE_MASS,
         ENVIRONMENT_SPAWN_PARTICLE_MASS_STD_2 * .5);
     default_random_engine rnd_gen;
@@ -216,8 +247,8 @@ int main(int, char **) {
     printf("Using seed for random generators: %u\n", rndSeed);
 
     // generate particles
-    if (ENVIRONMENT_SPAWN_FORM >= 0 && ENVIRONMENT_SPAWN_FORM <= 2)
-        generateParticles(ENVIRONMENT_SPAWN_FORM, distribution, rnd_gen);
+    if (ENVIRONMENT_SPAWN_FORM >= 0 && ENVIRONMENT_SPAWN_FORM <= 3)
+        generateParticles(ENVIRONMENT_SPAWN_FORM, distributionMass, rnd_gen);
 
     // init openCV
     int visu_width = ENVIRONMENT_WIDTH * VISU_WIDTH_PX_PER_METER;
