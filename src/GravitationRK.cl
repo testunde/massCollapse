@@ -17,8 +17,7 @@ double2 accelByDistance(double2 distance, double mass) {
     double absDeltaRSqr = distSqr.x + distSqr.y;
     double massDivRSqr = mass * GRAVITAIONAL_CONSTANT / absDeltaRSqr;
 
-    double2 result = distance * massDivRSqr;
-    return result;
+    return distance * massDivRSqr;
 }
 
 double2 RungeKutta4(double2 distance, double mass, double timestep) {
@@ -27,13 +26,10 @@ double2 RungeKutta4(double2 distance, double mass, double timestep) {
     double2 F3 = timestep * accelByDistance(distance + F2 * .5, mass);
     double2 F4 = timestep * accelByDistance(distance + F3, mass);
 
-    double2 result = (F1 + 2. * (F2 + F3) + F4) / 6.;
-    return result;
+    return (F1 + 2. * (F2 + F3) + F4) / 6.;
 }
 
 double2 RungeKutta5(double2 distance, double mass, double timestep) {
-    double2 one = {1., 1.};
-    
     double2 F1 = timestep * accelByDistance(distance, mass);
     double2 F2 = timestep * accelByDistance(distance + F1 * .25, mass);
     double2 F3 = timestep * accelByDistance(distance + F1 * .125 + F2 * .125, mass);
@@ -41,8 +37,7 @@ double2 RungeKutta5(double2 distance, double mass, double timestep) {
     double2 F5 = timestep * accelByDistance(distance + F1 * (3. / 16.) + F4 * (9. / 16.), mass);
     double2 F6 = timestep * accelByDistance(distance + F1 * (-3. / 7.) + F2 * (2. / 7.) + F3 * (12. / 7.) + F4 * (-12. / 7.) + F5 * (8. / 7.), mass);
 
-    double2 result = (7. * (F1 + F6) + 32. * (F3 + F5) + 12. * F4) / 90.;
-    return result;
+    return (7. * (F1 + F6) + 32. * (F3 + F5) + 12. * F4) / 90.;
 }
 
 __kernel void GravitationRK(__global p_state *statesIn, __global p_state *statesOut, const int roundOdd_c) {
@@ -80,7 +75,7 @@ __kernel void GravitationRK(__global p_state *statesIn, __global p_state *states
 __kernel void InitialVelocity(__global p_state *statesIn, __global p_state *statesOut) {
     int index = get_global_id(0);
     
-    double coordNorm = sqrt(statesIn[index].pos.x * statesIn[index].pos.x + statesIn[index].pos.y * statesIn[index].pos.y);
+    double coordNorm = length(statesIn[index].pos);
     
     if (ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION == 2) { // RungeKutta5 (after all points are generated)
         double2 gravForce = {.0, .0};
@@ -94,7 +89,7 @@ __kernel void InitialVelocity(__global p_state *statesIn, __global p_state *stat
             
             gravForce += rk;
         }
-        double gravNorm = sqrt(gravForce.x * gravForce.x + gravForce.y * gravForce.y);
+        double gravNorm = length(gravForce);
         double absVel = sqrt(coordNorm * gravNorm);
         
         statesOut[index].vel.x = absVel * (-gravForce.y) / gravNorm;
