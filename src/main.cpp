@@ -46,11 +46,8 @@ long simplePowBase2(int e) {
 void update(cl::CommandQueue &queue, cl::Kernel &kernel,
             cl::Buffer *buffers[2]) {
     static p_state states[(long)ENVIRONMENT_SPAWN_PARTICLES_TOTAL];
-    static bool roundOdd = SIMULATION_ROUNDS % 2 == 1;
-
-    queue.enqueueCopyBuffer(*buffers[1], *buffers[0], 0, 0,
-                            ENVIRONMENT_SPAWN_PARTICLES_TOTAL *
-                                sizeof(p_state));
+    static const bool roundOdd = SIMULATION_ROUNDS % 2 == 1;
+    static bool roundOdd_c = false;
 
     cl_int er = kernel.setArg(0, *buffers[0]);
     if (er != CL_SUCCESS)
@@ -58,33 +55,23 @@ void update(cl::CommandQueue &queue, cl::Kernel &kernel,
     er = kernel.setArg(1, *buffers[1]);
     if (er != CL_SUCCESS)
         throw cl::Error(er, "arg1");
-    er = kernel.setArg(2, (long)ENVIRONMENT_SPAWN_PARTICLES_TOTAL);
+    er = kernel.setArg(2, roundOdd_c ? 1 : 0);
     if (er != CL_SUCCESS)
         throw cl::Error(er, "arg2");
-    er = kernel.setArg(3, SIMULATION_ROUNDS);
-    if (er != CL_SUCCESS)
-        throw cl::Error(er, "arg3");
-    er = kernel.setArg(4, SIMULATION_TIME_PER_STEP);
-    if (er != CL_SUCCESS)
-        throw cl::Error(er, "arg4");
     queue.enqueueNDRangeKernel(kernel, cl::NullRange,
                                cl::NDRange(ENVIRONMENT_SPAWN_PARTICLES_TOTAL),
                                cl::NullRange);
     queue.finish();
 
-    if (!roundOdd) {
-        // has to be done this way, otherwise *buffers[0] ends up being empty
-        queue.enqueueCopyBuffer(*buffers[0], *buffers[1], 0, 0,
-                                ENVIRONMENT_SPAWN_PARTICLES_TOTAL *
-                                    sizeof(p_state));
-    }
-
-    queue.enqueueReadBuffer(*buffers[1], CL_TRUE, 0,
+    queue.enqueueReadBuffer(roundOdd_c ? *buffers[0] : *buffers[1], CL_TRUE, 0,
                             ENVIRONMENT_SPAWN_PARTICLES_TOTAL * sizeof(p_state),
                             states);
 
     for (int i = 0; i < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; i++)
         Particle::particleList->at(i)->setCLStruct(&states[i]);
+
+    if (roundOdd)
+        roundOdd_c = !roundOdd_c;
 }
 
 void clearEnvironment() {
@@ -93,7 +80,7 @@ void clearEnvironment() {
     for (Particle *d : *Particle::particleList) {
         delete d;
     }
-    Particle::particleList->clear();
+    // Particle::particleList->clear();
 }
 
 // [0.0, 1.0]
@@ -332,7 +319,14 @@ int main(int, char **) {
         cl::Program::Sources sources(1,
                                      make_pair(source.c_str(), source.size()));
         program = cl::Program(context, sources);
-        program.build(devices);
+        char macros[200] = {'\0'};
+        sprintf(macros,
+                "-DGRAVITAIONAL_CONSTANT=%0.16f "
+                "-DENVIRONMENT_SPAWN_PARTICLES_TOTAL=%ld "
+                "-DSIMULATION_TIME_PER_STEP=%lf -DSIMULATION_ROUNDS=%d",
+                GRAVITAIONAL_CONSTANT, (long)ENVIRONMENT_SPAWN_PARTICLES_TOTAL,
+                SIMULATION_TIME_PER_STEP, SIMULATION_ROUNDS);
+        program.build(devices, macros);
         cl::Kernel kernel = cl::Kernel(program, "GravitationRK");
 
         // simulation start
@@ -353,7 +347,7 @@ int main(int, char **) {
             for (int i = 0; i < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; i++)
                 states[i] = (*Particle::particleList)[i]->getCLStruct();
             queue.enqueueWriteBuffer(
-                bufOut, CL_TRUE, 0,
+                bufIn, CL_TRUE, 0,
                 ENVIRONMENT_SPAWN_PARTICLES_TOTAL * sizeof(p_state), states);
         }
         for (int t = 0; t <= SIMULATION_TIME_MAX / SIMULATION_TIME_PER_STEP;
