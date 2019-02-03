@@ -258,9 +258,8 @@ void generateParticles(const int form,
                 if (absVel > maxVel)
                     maxVel = absVel;
 
-                vector<double> tempVel = {absVel * (+p->getPosition(1)) / pNorm,
-                                          absVel * (-p->getPosition(0)) /
-                                              pNorm};
+                vector<double> tempVel = {absVel * (-gravForce[1]) / fNorm,
+                                          absVel * (+gravForce[0]) / fNorm};
 
                 p->setVelocity(tempVel);
 #ifdef USE_OPENMP
