@@ -141,7 +141,8 @@ string loadKernelSource() {
 
 void generateParticles(const int form,
                        normal_distribution<double> &distributionMass,
-                       default_random_engine &rnd_gen) {
+                       default_random_engine &rnd_gen, cl::CommandQueue &queue,
+                       cl::Program &program, cl::Buffer *buffers[2]) {
     int dCount = 0;
     double maxVel = 0.;
     double tMmax = DBL_MIN, tMmin = DBL_MAX;
@@ -224,36 +225,43 @@ void generateParticles(const int form,
     printf("min mass: %f | max mass: %f [kg]\n", tMmin, tMmax);
 
     if (ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION == 2) { // RK5
-#ifdef USE_OPENMP
-        __gnu_parallel::for_each(
-            Particle::particleList->begin(), Particle::particleList->end(),
-            [&](Particle *p) {
-#else
-        for (Particle *p : *Particle::particleList) {
-#endif
-                vector<double> gravForce = p->getcurrentGravForce();
-                // assuming force points to center, since average position of
-                // generated particles should be the center
-                double fNorm = sqrt(gravForce[0] * gravForce[0] +
-                                    gravForce[1] * gravForce[1]);
-                double pNorm = sqrt(p->getPosition(0) * p->getPosition(0) +
-                                    p->getPosition(1) * p->getPosition(1));
 
-                double absVel = sqrt(
-                    fNorm * pNorm); // by circular orbit eq. and grav. force eq.
+        cl::Kernel kernel = cl::Kernel(program, "InitialVelocity");
 
-                if (absVel > maxVel)
-                    maxVel = absVel;
+        static p_state states[(long)ENVIRONMENT_SPAWN_PARTICLES_TOTAL];
 
-                vector<double> tempVel = {absVel * (-gravForce[1]) / fNorm,
-                                          absVel * (+gravForce[0]) / fNorm};
+        for (int i = 0; i < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; i++)
+            states[i] = (*Particle::particleList)[i]->getCLStruct();
+        queue.enqueueWriteBuffer(
+            *buffers[0], CL_TRUE, 0,
+            ENVIRONMENT_SPAWN_PARTICLES_TOTAL * sizeof(p_state), states);
 
-                p->setVelocity(tempVel);
-#ifdef USE_OPENMP
-            });
-#else
+        cl_int er = kernel.setArg(0, *buffers[0]);
+        if (er != CL_SUCCESS)
+            throw cl::Error(er, "arg0");
+        er = kernel.setArg(1, *buffers[1]);
+        if (er != CL_SUCCESS)
+            throw cl::Error(er, "arg1");
+
+        queue.enqueueNDRangeKernel(
+            kernel, cl::NullRange,
+            cl::NDRange(ENVIRONMENT_SPAWN_PARTICLES_TOTAL), cl::NullRange);
+        queue.finish();
+
+        queue.enqueueReadBuffer(
+            *buffers[1], CL_TRUE, 0,
+            ENVIRONMENT_SPAWN_PARTICLES_TOTAL * sizeof(p_state), states);
+
+        for (int i = 0; i < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; i++) {
+            vector<double> tempVel = {states[i].vel.x, states[i].vel.y};
+
+            double tempVelAbs =
+                sqrt(tempVel[0] * tempVel[0] + tempVel[1] * tempVel[1]);
+            if (tempVelAbs > maxVel)
+                maxVel = tempVelAbs;
+
+            Particle::particleList->at(i)->setVelocity(tempVel);
         }
-#endif
     }
     printf("max velocity: %f [m/s]\n", maxVel);
 }
@@ -274,10 +282,6 @@ int main(int, char **) {
     // initialize environment
     printf("Initialize environment + generate particles...\n");
     printf("Using seed for random generators: %u\n", rndSeed);
-
-    // generate particles
-    if (ENVIRONMENT_SPAWN_FORM >= 0 && ENVIRONMENT_SPAWN_FORM <= 3)
-        generateParticles(ENVIRONMENT_SPAWN_FORM, distributionMass, rnd_gen);
 
     // init openCV
     int visu_width = ENVIRONMENT_WIDTH * VISU_WIDTH_PX_PER_METER;
@@ -319,27 +323,31 @@ int main(int, char **) {
         cl::Program::Sources sources(1,
                                      make_pair(source.c_str(), source.size()));
         program = cl::Program(context, sources);
-        char macros[200] = {'\0'};
+        char macros[300] = {'\0'};
         sprintf(macros,
+                "-DENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION=%d "
                 "-DGRAVITAIONAL_CONSTANT=%0.16f "
                 "-DENVIRONMENT_SPAWN_PARTICLES_TOTAL=%ld "
+                "-DENVIRONMENT_SPAWN_PARTICLE_MASS=%lf "
+                "-DENVIRONMENT_SPAWN_START_ANGULAR_VELO=%lf "
                 "-DSIMULATION_TIME_PER_STEP=%lf -DSIMULATION_ROUNDS=%d",
+                ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION,
                 GRAVITAIONAL_CONSTANT, (long)ENVIRONMENT_SPAWN_PARTICLES_TOTAL,
-                SIMULATION_TIME_PER_STEP, SIMULATION_ROUNDS);
+                ENVIRONMENT_SPAWN_PARTICLE_MASS,
+                ENVIRONMENT_SPAWN_START_ANGULAR_VELO, SIMULATION_TIME_PER_STEP,
+                SIMULATION_ROUNDS);
         program.build(devices, macros);
         cl::Kernel kernel = cl::Kernel(program, "GravitationRK");
-
-        // simulation start
-        double meanTotalMassPerPx = ENVIRONMENT_SPAWN_PARTICLE_MASS *
-                                    ENVIRONMENT_SPAWN_PARTICLES_TOTAL /
-                                    (visu_width * visu_height);
-        long startTimeStamp = currentMicroSec();
 
         cl::Buffer bufIn(context, CL_MEM_READ_WRITE,
                          ENVIRONMENT_SPAWN_PARTICLES_TOTAL * sizeof(p_state));
         cl::Buffer bufOut(context, CL_MEM_READ_WRITE,
                           ENVIRONMENT_SPAWN_PARTICLES_TOTAL * sizeof(p_state));
         cl::Buffer *buffers[2] = {&bufIn, &bufOut};
+
+        // generate particles
+        generateParticles(ENVIRONMENT_SPAWN_FORM, distributionMass, rnd_gen,
+                          queue, program, buffers);
 
         {
             p_state states[(long)ENVIRONMENT_SPAWN_PARTICLES_TOTAL];
@@ -350,6 +358,13 @@ int main(int, char **) {
                 bufIn, CL_TRUE, 0,
                 ENVIRONMENT_SPAWN_PARTICLES_TOTAL * sizeof(p_state), states);
         }
+
+        // simulation start
+        double meanTotalMassPerPx = ENVIRONMENT_SPAWN_PARTICLE_MASS *
+                                    ENVIRONMENT_SPAWN_PARTICLES_TOTAL /
+                                    (visu_width * visu_height);
+        long startTimeStamp = currentMicroSec();
+
         for (int t = 0; t <= SIMULATION_TIME_MAX / SIMULATION_TIME_PER_STEP;
              t += SIMULATION_ROUNDS) { // [s]
             update(queue, kernel, buffers);
