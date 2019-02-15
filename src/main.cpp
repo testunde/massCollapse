@@ -322,12 +322,13 @@ int main(int, char **) {
                 "-DENVIRONMENT_SPAWN_PARTICLES_TOTAL=%ld "
                 "-DENVIRONMENT_SPAWN_PARTICLE_MASS=%lf "
                 "-DENVIRONMENT_SPAWN_START_ANGULAR_VELO=%lf "
-                "-DSIMULATION_TIME_PER_STEP=%lf -DSIMULATION_ROUNDS=%d",
+                "-DSIMULATION_TIME_PER_STEP=%lf -DSIMULATION_ROUNDS=%d "
+                "-DCOLLISION_DISTANCE=%lf",
                 ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION,
                 GRAVITAIONAL_CONSTANT, (long)ENVIRONMENT_SPAWN_PARTICLES_TOTAL,
                 ENVIRONMENT_SPAWN_PARTICLE_MASS,
                 ENVIRONMENT_SPAWN_START_ANGULAR_VELO, SIMULATION_TIME_PER_STEP,
-                SIMULATION_ROUNDS);
+                SIMULATION_ROUNDS, COLLISION_DISTANCE);
         program.build(devices, macros);
         cl::Kernel kernel = cl::Kernel(program, "GravitationRK");
 

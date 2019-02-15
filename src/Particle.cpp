@@ -105,7 +105,7 @@ vector<double> Particle::RungeKutta5(vector<double> distance, double mass,
 
 // after one second
 void Particle::updateVelocity() {
-    if (this->fixed)
+    if (this->fixed || this->collision)
         return;
 
     for (Particle *p : *Particle::particleList) {
@@ -125,7 +125,7 @@ void Particle::updateVelocity() {
 
 // after one second
 void Particle::updatePosition() {
-    if (this->fixed)
+    if (this->fixed || this->collision)
         return;
 
     memcpy(this->positionPre, this->position, 2 * sizeof(double));
@@ -171,4 +171,5 @@ void Particle::setCLStruct(p_state *st) {
     this->velocity[1] = st->vel.y;
 
     this->mass = st->mass;
+    this->collision = st->collision;
 }

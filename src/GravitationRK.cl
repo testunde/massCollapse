@@ -10,6 +10,7 @@ typedef struct {
     double2 pos;
     double2 vel;
     double mass;
+    bool collision;
 } p_state;
 
 double2 accelByDistance(double2 distance, double mass) {
@@ -43,6 +44,12 @@ double2 RungeKutta5(double2 distance, double mass, double timestep) {
 __kernel void GravitationRK(__global p_state *statesIn, __global p_state *statesOut, const int roundOdd_c) {
     int index = get_global_id(0);
     __global p_state *statesPointers[2] = {(roundOdd_c == 1) ? statesOut : statesIn, (roundOdd_c == 1) ? statesIn : statesOut};
+
+    if (statesPointers[0][index].collision) {
+        // just skip the calculations if already collided, only copy to output for consistency
+        statesPointers[1][index] = statesPointers[0][index];
+        return;
+    }
 
     int r;
     for(r = 0; r < SIMULATION_ROUNDS; r++) {

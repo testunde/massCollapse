@@ -19,6 +19,7 @@ typedef struct {
     cl_double2 pos;
     cl_double2 vel;
     cl_double mass;
+    cl_bool collision;
 } p_state;
 
 class Particle {
@@ -28,6 +29,7 @@ class Particle {
     double velocity[2] = {0., 0.};    // ([m]; [m])
     double mass = 0.;                 // [kg]
     bool fixed = false;
+    bool collision = false;
 
     static std::vector<double> accelByDistance(std::vector<double> distance,
                                                double mass);
@@ -67,6 +69,7 @@ class Particle {
         st.pos = {this->position[0], this->position[1]};
         st.vel = {this->velocity[0], this->velocity[1]};
         st.mass = this->mass;
+        st.collision = this->collision;
         return st;
     };
 
