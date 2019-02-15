@@ -112,7 +112,6 @@ void getSpiralPoint(double result[2], int c, int max,
 void generateParticles(const int form,
                        normal_distribution<double> &distributionMass,
                        default_random_engine &rnd_gen) {
-    int dCount = 0;
     double maxVel = 0.;
     double tMmax = DBL_MIN, tMmin = DBL_MAX;
     for (int c = 0; c < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; c++) {
@@ -183,13 +182,6 @@ void generateParticles(const int form,
 
         Particle *tempParticle = new Particle(tempMass, tempCoord, tempVel);
         Particle::particleList->push_back(tempParticle);
-
-        dCount++;
-        if (dCount % ((int)ENVIRONMENT_SPAWN_PARTICLES_TOTAL / 10) == 0) {
-            printf("%.0f%%\r",
-                   100. * dCount / ENVIRONMENT_SPAWN_PARTICLES_TOTAL);
-            fflush(stdout);
-        }
     }
     printf("min mass: %f | max mass: %f [kg]\n", tMmin, tMmax);
 
