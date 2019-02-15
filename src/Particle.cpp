@@ -25,7 +25,9 @@ Particle::~Particle() {}
 
 vector<double> Particle::accelByDistance(vector<double> distance, double mass) {
     double absDeltaRSqr = distance[0] * distance[0] + distance[1] * distance[1];
-    double massDivRSqr = mass * GRAVITAIONAL_CONSTANT / absDeltaRSqr;
+    double absDeltaR = sqrt(absDeltaRSqr);
+    double massDivRSqr =
+        mass * GRAVITAIONAL_CONSTANT / (absDeltaRSqr * absDeltaR);
 
     vector<double> result = {distance[0] * massDivRSqr,
                              distance[1] * massDivRSqr};

@@ -17,7 +17,7 @@ double2 accelByDistance(double2 distance, double mass) {
     double absDeltaRSqr = distSqr.x + distSqr.y;
     double massDivRSqr = mass * GRAVITAIONAL_CONSTANT / absDeltaRSqr;
 
-    return distance * massDivRSqr;
+    return normalize(distance) * massDivRSqr;
 }
 
 double2 RungeKutta4(double2 distance, double mass, double timestep) {
