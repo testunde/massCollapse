@@ -75,6 +75,9 @@ __kernel void GravitationRK(__global p_state *statesIn, __global p_state *states
 __kernel void InitialVelocity(__global p_state *statesIn, __global p_state *statesOut) {
     int index = get_global_id(0);
     
+    // for consistency, first copy all properties so unchanged ones are still present in the output
+    statesOut[index] = statesIn[index];
+    
     double coordNorm = length(statesIn[index].pos);
     
     if (ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION == 2) { // RungeKutta5 (after all points are generated)
