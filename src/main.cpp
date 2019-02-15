@@ -393,6 +393,11 @@ int main(int, char **) {
                         //    + 1);
                         int colorTotalMass =
                             min(255, (int)(.68 * 255. * totalMassRatio));
+                        int colorMass =
+                            (int)(255. *
+                                  (1. - ENVIRONMENT_SPAWN_PARTICLE_MASS /
+                                            (total_mass[w][h] +
+                                             ENVIRONMENT_SPAWN_PARTICLE_MASS)));
 
                         int cP = count_particle[w][h];
                         int colorCountParticle =
@@ -402,11 +407,11 @@ int main(int, char **) {
                         int colorCountParticle2 =
                             (cP > 0)
                                 ? (int)(255. *
-                                        (1. - 1. / (double)simplePowBase2(cP)))
+                                        (1. - 1. / (1. * (double)simplePowBase2(
+                                                             cP))))
                                 : 0;
 
-                        cv::Vec3b finalColor(0, colorCountParticle2,
-                                             colorTotalMass);
+                        cv::Vec3b finalColor(0, colorCountParticle2, colorMass);
                         for (int ww = 0; ww < OPENCV_VIDEO_SCALE; ww++)
                             for (int hh = 0; hh < OPENCV_VIDEO_SCALE; hh++)
                                 envVisu.at<cv::Vec3b>(
