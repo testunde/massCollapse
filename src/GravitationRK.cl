@@ -45,14 +45,19 @@ __kernel void GravitationRK(__global p_state *statesIn, __global p_state *states
     int index = get_global_id(0);
     __global p_state *statesPointers[2] = {(roundOdd_c == 1) ? statesOut : statesIn, (roundOdd_c == 1) ? statesIn : statesOut};
 
-    if (statesPointers[0][index].collision) {
-        // just skip the calculations if already collided, only copy to output for consistency
-        statesPointers[1][index] = statesPointers[0][index];
-        return;
-    }
-
     int r;
     for(r = 0; r < SIMULATION_ROUNDS; r++) {
+        if (statesPointers[0][index].collision) {
+            // just skip the calculations if already collided, only copy to output for consistency
+            
+            // (still doing the barrier syncs)
+            barrier(CLK_GLOBAL_MEM_FENCE); //  barrier to sync threads
+            statesPointers[1][index] = statesPointers[0][index];
+            barrier(CLK_GLOBAL_MEM_FENCE); //  barrier to sync threads
+            
+            continue;
+        }
+        
         double2 vel = statesPointers[0][index].vel;
         double2 pos = statesPointers[0][index].pos;
 
@@ -67,10 +72,17 @@ __kernel void GravitationRK(__global p_state *statesIn, __global p_state *states
             finalVel += rk;
         }
 
-        statesPointers[1][index].pos = pos + SIMULATION_TIME_PER_STEP * finalVel;
+        statesPointers[1][index]= statesPointers[0][index];
+        statesPointers[1][index].pos += SIMULATION_TIME_PER_STEP * finalVel;
         statesPointers[1][index].vel = finalVel;
-        statesPointers[1][index].mass = statesPointers[0][index].mass;
 
+        // check for collisions
+        barrier(CLK_GLOBAL_MEM_FENCE); //  barrier to sync threads
+        for(i = 0; i < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; i++) {
+            if (i == index) continue;
+            
+        }
+        
         // change pointers
         __global p_state *temp = statesPointers[0];
         statesPointers[0] = statesPointers[1];
