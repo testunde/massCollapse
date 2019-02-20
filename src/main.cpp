@@ -371,22 +371,34 @@ int main(int, char **) {
                 auto count_particle_collided =
                     init_matrix<int>(visu_width, visu_height, 0);
 
+#ifdef USE_OPENMP
+                __gnu_parallel::for_each(
+                    Particle::particleList->begin(),
+                    Particle::particleList->end(), [&](Particle *p) {
+#else
                 for (Particle *p : *Particle::particleList) {
-                    int idx[2] = {
-                        (int)((p->getPosition(0) + ENVIRONMENT_WIDTH * .5) *
-                              VISU_WIDTH_PX_PER_METER / OPENCV_VIDEO_SCALE),
-                        (int)((p->getPosition(1) + ENVIRONMENT_HEIGHT * .5) *
-                              VISU_HEIGHT_PX_PER_METER / OPENCV_VIDEO_SCALE)};
-                    idx[0] = max(min(idx[0], visu_height - 1), 0);
-                    idx[1] = max(min(idx[1], visu_height - 1), 0);
+#endif
+                        int idx[2] = {
+                            (int)((p->getPosition(0) + ENVIRONMENT_WIDTH * .5) *
+                                  VISU_WIDTH_PX_PER_METER / OPENCV_VIDEO_SCALE),
+                            (int)((p->getPosition(1) +
+                                   ENVIRONMENT_HEIGHT * .5) *
+                                  VISU_HEIGHT_PX_PER_METER /
+                                  OPENCV_VIDEO_SCALE)};
+                        idx[0] = max(min(idx[0], visu_height - 1), 0);
+                        idx[1] = max(min(idx[1], visu_height - 1), 0);
 
-                    if (p->getCollission()) {
-                        count_particle_collided[idx[0]][idx[1]]++;
-                    } else {
-                        total_mass[idx[0]][idx[1]] += p->getMass();
-                        count_particle[idx[0]][idx[1]]++;
-                    }
+                        if (p->getCollission()) {
+                            count_particle_collided[idx[0]][idx[1]]++;
+                        } else {
+                            total_mass[idx[0]][idx[1]] += p->getMass();
+                            count_particle[idx[0]][idx[1]]++;
+                        }
+#ifdef USE_OPENMP
+                    });
+#else
                 }
+#endif
                 // visualization
                 double avgColor = 0.;
 #ifdef USE_OPENCV
