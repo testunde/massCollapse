@@ -316,7 +316,9 @@ int main(int, char **) {
                                      make_pair(source.c_str(), source.size()));
         program = cl::Program(context, sources);
         char macros[512] = {'\0'};
-        sprintf(macros,
+        if (512 <
+            sprintf(
+                macros,
                 "-DENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION=%d "
                 "-DGRAVITAIONAL_CONSTANT=%0.16f "
                 "-DENVIRONMENT_SPAWN_PARTICLES_TOTAL=%ld "
@@ -328,7 +330,9 @@ int main(int, char **) {
                 GRAVITAIONAL_CONSTANT, (long)ENVIRONMENT_SPAWN_PARTICLES_TOTAL,
                 ENVIRONMENT_SPAWN_PARTICLE_MASS,
                 ENVIRONMENT_SPAWN_START_ANGULAR_VELO, SIMULATION_TIME_PER_STEP,
-                SIMULATION_ROUNDS, COLLISION_DISTANCE);
+                SIMULATION_ROUNDS, COLLISION_DISTANCE))
+            throw runtime_error(
+                "Stack smash by passing macros to kernel! (buffer overflow)");
         program.build(devices, macros);
         cl::Kernel kernel = cl::Kernel(program, "GravitationRK");
 
