@@ -83,8 +83,8 @@ __kernel void GravitationRK(__global p_state *statesIn, __global p_state *states
             // skip its own index || if 'i' was already involved in a collision
             if (i == index || statesPointers[1][i].collision) continue;
             
-            double2 offsetPos = statesPointers[1][i].pos - statesPointers[1][index].pos;
-            if (length(offsetPos) < COLLISION_DISTANCE) {
+            double dist = distance(statesPointers[1][i].pos, statesPointers[1][index].pos);
+            if (dist < COLLISION_DISTANCE) {
                 // convention: collision results will go to the lowest ID of the collision chain
                 if (i < index) {
                     collision = true;
