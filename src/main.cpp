@@ -374,6 +374,7 @@ int main(int, char **) {
                     init_matrix<int>(visu_width, visu_height, 0);
                 auto count_particle_collided =
                     init_matrix<int>(visu_width, visu_height, 0);
+                int particles_remaining = ENVIRONMENT_SPAWN_PARTICLES_TOTAL;
 
 #ifdef USE_OPENMP
                 __gnu_parallel::for_each(
@@ -394,6 +395,7 @@ int main(int, char **) {
 
                         if (p->getCollission()) {
                             count_particle_collided[idx[0]][idx[1]]++;
+                            particles_remaining--;
                         } else {
                             total_mass[idx[0]][idx[1]] += p->getMass();
                             count_particle[idx[0]][idx[1]]++;
@@ -438,7 +440,7 @@ int main(int, char **) {
 
                         cv::Vec3b finalColor(0, colorCountParticle2, colorMass);
                         if (finalColor[1] == 0 && finalColor[2] == 0) {
-                            // get blue-ish color fold collision-positions
+                            // get blue-ish color at collision-positions
                             finalColor[0] =
                                 (cP_c > 0)
                                     ? (int)(255. *
@@ -471,8 +473,12 @@ int main(int, char **) {
                             (long)t) *
                            (currentTimeStamp - startTimeStamp) /
                            (1E6L * (long)t));
-                printf("time: %f [s] | avgColor: %f [0-256[ (ETA: %ldm %lds)\n",
+                printf("time: %f [s] | avgColor: %f [0-256[ | particles: %ld "
+                       "(%.3f%%) | ETA: %ldm %lds\n",
                        ((float)t) * SIMULATION_TIME_PER_STEP, avgColor,
+                       particles_remaining,
+                       100. * (double)particles_remaining /
+                           (double)ENVIRONMENT_SPAWN_PARTICLES_TOTAL,
                        eta_seconds / 60, eta_seconds % 60);
                 fflush(stdout);
             }
