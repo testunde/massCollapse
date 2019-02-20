@@ -157,7 +157,7 @@ void generateParticles(const int form,
                           (ENVIRONMENT_SPAWN_PARTICLES_TOTAL *
                            ENVIRONMENT_SPAWN_PARTICLE_MASS) *
                           coordNorm) *
-                     2;
+                     2.;
             break;
         case 0: // plain angular function (alpha * radius)
         default:
