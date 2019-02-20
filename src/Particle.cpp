@@ -109,7 +109,7 @@ void Particle::updateVelocity() {
         return;
 
     for (Particle *p : *Particle::particleList) {
-        if (p == this)
+        if (p == this || p->getCollission())
             continue;
 
         vector<double> deltaR = {p->getPosition(0) - this->position[0],

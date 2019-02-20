@@ -52,7 +52,7 @@ __kernel void GravitationRK(__global p_state *statesIn, __global p_state *states
             
             // (still doing the barrier syncs)
             barrier(CLK_GLOBAL_MEM_FENCE); //  barrier to sync threads
-            statesPointers[1][index] = statesPointers[0][index];
+            barrier(CLK_GLOBAL_MEM_FENCE); //  barrier to sync threads
             barrier(CLK_GLOBAL_MEM_FENCE); //  barrier to sync threads
             
             continue;
@@ -64,7 +64,8 @@ __kernel void GravitationRK(__global p_state *statesIn, __global p_state *states
         double2 finalVel = vel;
         int i;
         for(i = 0; i < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; i++) {
-            if (i == index) continue;
+            // skip its own index || if 'i' was already involved in a collision (thus doesn't exist anymore)
+            if (i == index || statesPointers[1][i].collision) continue;
 
             double2 deltaR = statesPointers[0][i].pos - pos;
             double2 rk = RungeKutta5(deltaR, statesPointers[0][i].mass, SIMULATION_TIME_PER_STEP);
@@ -72,16 +73,49 @@ __kernel void GravitationRK(__global p_state *statesIn, __global p_state *states
             finalVel += rk;
         }
 
-        statesPointers[1][index]= statesPointers[0][index];
+        statesPointers[1][index] = statesPointers[0][index];
         statesPointers[1][index].pos += SIMULATION_TIME_PER_STEP * finalVel;
         statesPointers[1][index].vel = finalVel;
 
         // check for collisions
         barrier(CLK_GLOBAL_MEM_FENCE); //  barrier to sync threads
+        bool collision = false;
+        p_state newState = statesPointers[1][index]; // already get old state
         for(i = 0; i < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; i++) {
-            if (i == index) continue;
+            // skip its own index || if 'i' was already involved in a collision
+            if (i == index || statesPointers[1][i].collision) continue;
             
+            double2 offsetPos = statesPointers[1][i].pos - statesPointers[1][index].pos;
+            if (length(offsetPos) < COLLISION_DISTANCE) {
+                // convention: collision results will go to the lowest ID of the collision chain
+                if (i < index) {
+                    collision = true;
+                    break; // collision with lower ID -> no other checking needed anymore
+                } else {
+                    double massID = statesPointers[1][i].mass;
+                    
+                    // new position through center-of-mass
+                    newState.pos = (newState.pos * newState.mass + statesPointers[1][i].pos * massID) / (newState.mass + massID);
+                    
+                    // new velocity via impulse conservation
+                    newState.vel = (newState.vel * newState.mass + statesPointers[1][i].vel * massID) / (newState.mass + massID);
+                    
+                    // add mass from ID
+                    newState.mass += massID;
+                }
+            }
         }
+        barrier(CLK_GLOBAL_MEM_FENCE); //  barrier to sync threads
+        if (collision) {
+            statesPointers[1][index].collision = true;
+            
+            // copy last updates to input states for consistency
+            statesPointers[0][index] = statesPointers[1][index];
+        } else {
+            // re-copy own state (updates will be applied this way if happened)
+            statesPointers[1][index] = newState;
+        }
+        
         
         // change pointers
         __global p_state *temp = statesPointers[0];
@@ -100,7 +134,7 @@ __kernel void InitialVelocity(__global p_state *statesIn, __global p_state *stat
     double coordNorm = length(statesIn[index].pos);
     
     if (ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION == 2) { // RungeKutta5 (after all points are generated)
-        double2 gravForce = {.0, .0};
+        double2 gravAccel = {.0, .0};
         int i;
         for(i = 0; i < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; i++) {
             if (i == index) continue;
@@ -109,13 +143,13 @@ __kernel void InitialVelocity(__global p_state *statesIn, __global p_state *stat
             
             double2 rk = RungeKutta5(deltaR, statesIn[i].mass, 1.0);
             
-            gravForce += rk;
+            gravAccel += rk;
         }
-        double gravNorm = length(gravForce);
+        double gravNorm = length(gravAccel);
         double absVel = sqrt(coordNorm * gravNorm);
         
-        statesOut[index].vel.x = absVel * (-gravForce.y) / gravNorm;
-        statesOut[index].vel.y = absVel * (+gravForce.x) / gravNorm;
+        statesOut[index].vel.x = absVel * (-gravAccel.y) / gravNorm;
+        statesOut[index].vel.y = absVel * (+gravAccel.x) / gravNorm;
     } else if(ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION == 1) { // circular orbit sqrt(GM*radius)*2
         double absVel = sqrt(GRAVITAIONAL_CONSTANT * (ENVIRONMENT_SPAWN_PARTICLES_TOTAL *
                                    ENVIRONMENT_SPAWN_PARTICLE_MASS) * coordNorm) * 2;

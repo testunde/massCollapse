@@ -315,7 +315,7 @@ int main(int, char **) {
         cl::Program::Sources sources(1,
                                      make_pair(source.c_str(), source.size()));
         program = cl::Program(context, sources);
-        char macros[300] = {'\0'};
+        char macros[512] = {'\0'};
         sprintf(macros,
                 "-DENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION=%d "
                 "-DGRAVITAIONAL_CONSTANT=%0.16f "
@@ -368,6 +368,8 @@ int main(int, char **) {
                     init_matrix<double>(visu_width, visu_height, 0.);
                 auto count_particle =
                     init_matrix<int>(visu_width, visu_height, 0);
+                auto count_particle_collided =
+                    init_matrix<int>(visu_width, visu_height, 0);
 
                 for (Particle *p : *Particle::particleList) {
                     int idx[2] = {
@@ -377,8 +379,13 @@ int main(int, char **) {
                               VISU_HEIGHT_PX_PER_METER / OPENCV_VIDEO_SCALE)};
                     idx[0] = max(min(idx[0], visu_height - 1), 0);
                     idx[1] = max(min(idx[1], visu_height - 1), 0);
-                    total_mass[idx[0]][idx[1]] += p->getMass();
-                    count_particle[idx[0]][idx[1]]++;
+
+                    if (p->getCollission()) {
+                        count_particle_collided[idx[0]][idx[1]]++;
+                    } else {
+                        total_mass[idx[0]][idx[1]] += p->getMass();
+                        count_particle[idx[0]][idx[1]]++;
+                    }
                 }
                 // visualization
                 double avgColor = 0.;
@@ -401,6 +408,7 @@ int main(int, char **) {
                                              ENVIRONMENT_SPAWN_PARTICLE_MASS)));
 
                         int cP = count_particle[w][h];
+                        int cP_c = count_particle_collided[w][h];
                         int colorCountParticle =
                             (int)(255. * ((double)cP) /
                                   (double)Particle::particleList->size());
@@ -413,6 +421,16 @@ int main(int, char **) {
                                 : 0;
 
                         cv::Vec3b finalColor(0, colorCountParticle2, colorMass);
+                        if (finalColor[1] == 0 && finalColor[2] == 0) {
+                            // get blue-ish color fold collision-positions
+                            finalColor[0] =
+                                (cP_c > 0)
+                                    ? (int)(255. *
+                                            (1. -
+                                             1. / (1. * (double)simplePowBase2(
+                                                            cP_c))))
+                                    : 0;
+                        }
                         for (int ww = 0; ww < OPENCV_VIDEO_SCALE; ww++)
                             for (int hh = 0; hh < OPENCV_VIDEO_SCALE; hh++)
                                 envVisu.at<cv::Vec3b>(

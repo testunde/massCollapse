@@ -63,6 +63,7 @@ class Particle {
     double getPosition(int axis) const { return this->position[axis]; }
     double getVelocity(int axis) const { return this->velocity[axis]; }
     double getMass() const { return this->mass; }
+    bool getCollission() const { return this->collision; }
     std::vector<double> const getcurrentGravForce();
     p_state getCLStruct() const {
         p_state st;
