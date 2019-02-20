@@ -68,9 +68,7 @@ __kernel void GravitationRK(__global p_state *statesIn, __global p_state *states
             if (i == index || statesPointers[1][i].collision) continue;
 
             double2 deltaR = statesPointers[0][i].pos - pos;
-            double2 rk = RungeKutta5(deltaR, statesPointers[0][i].mass, SIMULATION_TIME_PER_STEP);
-
-            finalVel += rk;
+            finalVel += RungeKutta5(deltaR, statesPointers[0][i].mass, SIMULATION_TIME_PER_STEP);
         }
 
         statesPointers[1][index] = statesPointers[0][index];
@@ -141,9 +139,7 @@ __kernel void InitialVelocity(__global p_state *statesIn, __global p_state *stat
             
             double2 deltaR = statesIn[i].pos - statesIn[index].pos;
             
-            double2 rk = RungeKutta5(deltaR, statesIn[i].mass, 1.0);
-            
-            gravAccel += rk;
+            gravAccel += RungeKutta5(deltaR, statesIn[i].mass, 1.0);
         }
         double gravNorm = length(gravAccel);
         double absVel = sqrt(coordNorm * gravNorm);
@@ -152,7 +148,7 @@ __kernel void InitialVelocity(__global p_state *statesIn, __global p_state *stat
         statesOut[index].vel.y = absVel * (+gravAccel.x) / gravNorm;
     } else if(ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION == 1) { // circular orbit sqrt(GM*radius)*2
         double absVel = sqrt(GRAVITAIONAL_CONSTANT * (ENVIRONMENT_SPAWN_PARTICLES_TOTAL *
-                                   ENVIRONMENT_SPAWN_PARTICLE_MASS) * coordNorm) * 2;
+                                   ENVIRONMENT_SPAWN_PARTICLE_MASS) * coordNorm) * 2.;
         
         statesOut[index].vel.x = absVel * (+statesIn[index].pos.y) / coordNorm;
         statesOut[index].vel.y = absVel * (-statesIn[index].pos.x) / coordNorm;
