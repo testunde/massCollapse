@@ -215,7 +215,7 @@ void generateParticles(const int form,
         Particle *tempParticle = new Particle(tempMass, tempCoord, tempVel);
         Particle::particleList->push_back(tempParticle);
     }
-    printf("min mass: %f | max mass: %f [kg]\n", tMmin, tMmax);
+    printf("min mass: %.6e | max mass: %.6e [kg]\n", tMmin, tMmax);
 
     if (ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION == 2) { // RK5
 
@@ -256,7 +256,7 @@ void generateParticles(const int form,
             Particle::particleList->at(i)->setVelocity(tempVel);
         }
     }
-    printf("max velocity: %f [m/s]\n", maxVel);
+    printf("max velocity: %.6e [m/s]\n", maxVel);
 }
 
 int main(int, char **) {
@@ -285,7 +285,7 @@ int main(int, char **) {
     cv::Mat scaledMasses(visu_height, visu_width, CV_8UC3);
     cv::VideoWriter video(OPENCV_VIDEO_FILENAME,
                           cv::VideoWriter::fourcc(OPENCV_VIDEO_FORMAT),
-                          OPENCV_VIDEO_SECONDS_PER_STEP / SIMULATION_ROUNDS,
+                          OPENCV_VIDEO_STEPS_PER_SECOND / SIMULATION_ROUNDS,
                           cv::Size(visu_width, visu_height));
     visu_width /= OPENCV_VIDEO_SCALE;
     visu_height /= OPENCV_VIDEO_SCALE;
@@ -497,13 +497,14 @@ int main(int, char **) {
                             (long)t) *
                            (currentTimeStamp - lastTimeStamp) /
                            (1E6L * (long)(queueSize - 1)));
-                printf("time: %f [s] | avgColor: %f [0-256[ | particles: %ld "
-                       "(%.3f%%) | ETA: %ldm %lds\n",
+                printf("time: %.6e [s] | avgColor: %f [0-256[ | particles: %ld "
+                       "(%.3f%%) | ETA: %ldh %ldm %lds\n",
                        ((float)t) * SIMULATION_TIME_PER_STEP, avgColor,
                        particles_remaining,
                        100. * (double)particles_remaining /
                            (double)ENVIRONMENT_SPAWN_PARTICLES_TOTAL,
-                       eta_seconds / 60, eta_seconds % 60);
+                       (eta_seconds / 60) / 60, (eta_seconds / 60) % 60,
+                       eta_seconds % 60);
                 fflush(stdout);
             }
         }

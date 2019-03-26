@@ -39,8 +39,8 @@
 #ifdef USE_OPENCV
 #define OPENCV_VIDEO_FILENAME "video.avi"
 #define OPENCV_VIDEO_FORMAT 'H', 'F', 'Y', 'U' // raw; as for .avi format
-#define OPENCV_VIDEO_SECONDS_PER_STEP                                          \
-    60                       // [s/s] simulation seconds per video second (FPS)
+#define OPENCV_VIDEO_STEPS_PER_SECOND                                          \
+    60                       // [s/s] simulation steps per video second (FPS)
 #define OPENCV_VIDEO_SCALE 1 // only positive int!
 #endif
 
