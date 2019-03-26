@@ -8,6 +8,7 @@
 #include <float.h> // DLB_MIN + DBL_MAX
 #include <fstream>
 #include <iostream>
+#include <queue>  // for ETA
 #include <random> // normal_distribution
 #include <stdio.h>
 #include <stdlib.h> // rand
@@ -360,7 +361,8 @@ int main(int, char **) {
         double meanTotalMassPerPx = ENVIRONMENT_SPAWN_PARTICLE_MASS *
                                     ENVIRONMENT_SPAWN_PARTICLES_TOTAL /
                                     (visu_width * visu_height);
-        long startTimeStamp = currentMicroSec();
+        std::queue<long> timeStamps;
+        timeStamps.push(currentMicroSec());
 
         for (int t = 0; t <= SIMULATION_TIME_MAX / SIMULATION_TIME_PER_STEP;
              t += SIMULATION_ROUNDS) { // [s]
@@ -457,11 +459,16 @@ int main(int, char **) {
 #endif
 
                 long currentTimeStamp = currentMicroSec();
+                timeStamps.push(currentTimeStamp);
+                int queueSize = timeStamps.size();
+                long lastTimeStamp = timeStamps.front();
+                if (queueSize > SIMULATION_ETA_STEPS_ACCUMULATION)
+                    timeStamps.pop();
                 long eta_seconds =
                     (long)(((SIMULATION_TIME_MAX / SIMULATION_TIME_PER_STEP) -
                             (long)t) *
-                           (currentTimeStamp - startTimeStamp) /
-                           (1E6L * (long)t));
+                           (currentTimeStamp - lastTimeStamp) /
+                           (1E6L * (long)(queueSize - 1)));
                 printf("time: %f [s] | avgColor: %f [0-256[ | particles: %ld "
                        "(%.3f%%) | ETA: %ldm %lds\n",
                        ((float)t) * SIMULATION_TIME_PER_STEP, avgColor,

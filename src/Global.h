@@ -34,6 +34,7 @@
 #define SIMULATION_TIME_PER_STEP 1.0   // [s]
 #define SIMULATION_ROUNDS                                                      \
     1 // X rounds = X time steps (per GPU bulk calculation)
+#define SIMULATION_ETA_STEPS_ACCUMULATION 20
 
 #define VISU_WIDTH_PX_PER_METER 800  // [px/m]
 #define VISU_HEIGHT_PX_PER_METER 800 // [px/m]
