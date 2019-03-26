@@ -510,8 +510,10 @@ int main(int, char **) {
         if (err.err() == CL_BUILD_PROGRAM_FAILURE)
             cout << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(devices[0])
                  << endl;
+#ifdef USE_OPENCV
     } catch (cv::Exception &ex) {
         printf("OpenCV-Exception: %s\n", ex.what());
+#endif
     } catch (std::exception &err) {
         printf("Error: %s\n", err.what());
     }
