@@ -282,6 +282,7 @@ int main(int, char **) {
 #ifdef USE_OPENCV
     cv::namedWindow("env_simu", cv::WINDOW_AUTOSIZE);
     cv::Mat envVisu(visu_height, visu_width, CV_8UC3);
+    cv::Mat scaledMasses(visu_height, visu_width, CV_8UC3);
     cv::VideoWriter video(OPENCV_VIDEO_FILENAME,
                           cv::VideoWriter::fourcc(OPENCV_VIDEO_FORMAT),
                           OPENCV_VIDEO_SECONDS_PER_SECOND / SIMULATION_ROUNDS,
@@ -376,7 +377,7 @@ int main(int, char **) {
                     init_matrix<int>(visu_width, visu_height, 0);
                 auto count_particle_collided =
                     init_matrix<int>(visu_width, visu_height, 0);
-                int particles_remaining = ENVIRONMENT_SPAWN_PARTICLES_TOTAL;
+                long particles_remaining = ENVIRONMENT_SPAWN_PARTICLES_TOTAL;
 
                 for (Particle *p : *Particle::particleList) {
                     int idx[2] = {
@@ -384,15 +385,37 @@ int main(int, char **) {
                               VISU_WIDTH_PX_PER_METER / OPENCV_VIDEO_SCALE),
                         (int)((p->getPosition(1) + ENVIRONMENT_HEIGHT * .5) *
                               VISU_HEIGHT_PX_PER_METER / OPENCV_VIDEO_SCALE)};
-                    idx[0] = max(min(idx[0], visu_height - 1), 0);
-                    idx[1] = max(min(idx[1], visu_height - 1), 0);
+                    int idxLim[2] = {max(min(idx[0], visu_width - 1), 0),
+                                     max(min(idx[1], visu_height - 1), 0)};
 
                     if (p->getCollission()) {
-                        count_particle_collided[idx[0]][idx[1]]++;
+                        count_particle_collided[idxLim[0]][idxLim[1]]++;
                         particles_remaining--;
                     } else {
-                        total_mass[idx[0]][idx[1]] += p->getMass();
-                        count_particle[idx[0]][idx[1]]++;
+                        total_mass[idxLim[0]][idxLim[1]] += p->getMass();
+                        count_particle[idxLim[0]][idxLim[1]]++;
+#ifdef USE_OPENCV
+                        double radius = p->getRadius();
+                        if (radius > (M_SQRT1_2 / VISU_WIDTH_PX_PER_METER) ||
+                            radius > (M_SQRT1_2 / VISU_HEIGHT_PX_PER_METER)) {
+                            int colorMass =
+                                (int)(255. *
+                                      (1. -
+                                       ENVIRONMENT_SPAWN_PARTICLE_MASS /
+                                           (p->getMass() +
+                                            ENVIRONMENT_SPAWN_PARTICLE_MASS)));
+                            cv::ellipse(
+                                scaledMasses, cv::Point(idx[0], idx[1]),
+                                cv::Size(
+                                    round(radius * VISU_WIDTH_PX_PER_METER),
+                                    round(radius * VISU_HEIGHT_PX_PER_METER)),
+                                0., 0., 360., cv::Scalar(0, 127, colorMass), -1,
+                                -1);
+                            if (idx[0] == idxLim[0] && idx[1] == idxLim[1])
+                                scaledMasses.at<cv::Vec3b>(idx[1], idx[0]) =
+                                    cv::Vec3b(0, 0, 0);
+                        }
+#endif
                     }
                 }
 
@@ -452,8 +475,10 @@ int main(int, char **) {
                 }
                 avgColor /= visu_width * visu_height;
 
+                envVisu += scaledMasses;
                 video.write(envVisu);
                 cv::imshow("env_simu", envVisu);
+                scaledMasses.setTo(cv::Scalar(0, 0, 0));
                 if (cv::waitKey(30) >= 0)
                     break;
 #endif
