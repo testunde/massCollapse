@@ -480,11 +480,13 @@ int main(int, char **) {
             }
         }
     } catch (cl::Error &err) {
-        printf("Error: %s (%d)\n", err.what(), err.err());
-        /* if it was a compilation error */
+        printf("OpenCL-Error: %s (%d)\n", err.what(), err.err());
+        // if it was a compilation error
         if (err.err() == CL_BUILD_PROGRAM_FAILURE)
             cout << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(devices[0])
                  << endl;
+    } catch (cv::Exception &ex) {
+        printf("OpenCV-Exception: %s\n", ex.what());
     } catch (std::exception &err) {
         printf("Error: %s\n", err.what());
     }
