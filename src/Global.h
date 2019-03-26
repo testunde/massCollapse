@@ -16,7 +16,7 @@
 #define ENVIRONMENT_SPAWN_PARTICLE_DENSITY                                     \
     3.E8 // [kg/m^3] (Osmium: 2.26E4 kg/m^3)
 #define ENVIRONMENT_SPAWN_START_ANGULAR_VELO                                   \
-    2.E-3 // [m/2] (orthogonal towards the center)
+    2.E-3 // [1/s] (orthogonal towards the center)
 #define ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION                     \
     2 // 0: plain angular function (alpha * radius), 1: circular orbit
       // sqrt(GM*radius)*2, 2: RungeKutta5 (-> by grav. force)
@@ -39,11 +39,9 @@
 #ifdef USE_OPENCV
 #define OPENCV_VIDEO_FILENAME "video.avi"
 #define OPENCV_VIDEO_FORMAT 'H', 'F', 'Y', 'U' // raw; as for .avi format
-#define OPENCV_VIDEO_SECONDS_PER_SECOND                                        \
+#define OPENCV_VIDEO_SECONDS_PER_STEP                                          \
     60                       // [s/s] simulation seconds per video second (FPS)
 #define OPENCV_VIDEO_SCALE 1 // only positive int!
-#else
-#define OPENCV_VIDEO_SCALE 1 // don't change!
 #endif
 
 #define OPENCL_KERNEL_FILE "GravitationRK.cl"

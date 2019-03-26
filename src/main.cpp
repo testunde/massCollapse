@@ -285,10 +285,13 @@ int main(int, char **) {
     cv::Mat scaledMasses(visu_height, visu_width, CV_8UC3);
     cv::VideoWriter video(OPENCV_VIDEO_FILENAME,
                           cv::VideoWriter::fourcc(OPENCV_VIDEO_FORMAT),
-                          OPENCV_VIDEO_SECONDS_PER_SECOND / SIMULATION_ROUNDS,
+                          OPENCV_VIDEO_SECONDS_PER_STEP / SIMULATION_ROUNDS,
                           cv::Size(visu_width, visu_height));
     visu_width /= OPENCV_VIDEO_SCALE;
     visu_height /= OPENCV_VIDEO_SCALE;
+    static int video_scale = OPENCV_VIDEO_SCALE;
+#else
+    static int video_scale = 1;
 #endif
 
     // init openCL
@@ -382,9 +385,9 @@ int main(int, char **) {
                 for (Particle *p : *Particle::particleList) {
                     int idx[2] = {
                         (int)((p->getPosition(0) + ENVIRONMENT_WIDTH * .5) *
-                              VISU_WIDTH_PX_PER_METER / OPENCV_VIDEO_SCALE),
+                              VISU_WIDTH_PX_PER_METER / video_scale),
                         (int)((p->getPosition(1) + ENVIRONMENT_HEIGHT * .5) *
-                              VISU_HEIGHT_PX_PER_METER / OPENCV_VIDEO_SCALE)};
+                              VISU_HEIGHT_PX_PER_METER / video_scale)};
                     int idxLim[2] = {max(min(idx[0], visu_width - 1), 0),
                                      max(min(idx[1], visu_height - 1), 0)};
 
