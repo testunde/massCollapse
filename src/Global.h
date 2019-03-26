@@ -13,6 +13,8 @@
 #define ENVIRONMENT_SPAWN_PARTICLES_TOTAL .5E3
 #define ENVIRONMENT_SPAWN_PARTICLE_MASS 5.E2        // [kg]
 #define ENVIRONMENT_SPAWN_PARTICLE_MASS_STD_2 1.8E1 // [kg] (2*std)
+#define ENVIRONMENT_SPAWN_PARTICLE_DENSITY                                     \
+    3.E8 // [kg/m^3] (Osmium: 2.26E4 kg/m^3)
 #define ENVIRONMENT_SPAWN_START_ANGULAR_VELO                                   \
     -2.E-3 // [m/2] (orthogonal towards the center)
 #define ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION                     \

@@ -19,15 +19,19 @@ typedef struct {
     cl_double2 pos;
     cl_double2 vel;
     cl_double mass;
+    cl_double radius;
     cl_bool collision;
 } p_state;
 
 class Particle {
   private:
+    static constexpr double radiusPreFactor =
+        3. / (ENVIRONMENT_SPAWN_PARTICLE_DENSITY * M_PI * 4.);
     double position[2] = {0., 0.};    // ([m]; [m])
     double positionPre[2] = {0., 0.}; // ([m]; [m])
     double velocity[2] = {0., 0.};    // ([m]; [m])
     double mass = 0.;                 // [kg]
+    double radius = 0.;               // [m]
     bool fixed = false;
     bool collision = false;
 
@@ -46,6 +50,8 @@ class Particle {
     static std::vector<double> RungeKutta5(std::vector<double> distance,
                                            double mass, double timestep);
 
+    double calcRadius();
+
   public:
     static std::vector<Particle *> *particleList;
 
@@ -63,6 +69,7 @@ class Particle {
     double getPosition(int axis) const { return this->position[axis]; }
     double getVelocity(int axis) const { return this->velocity[axis]; }
     double getMass() const { return this->mass; }
+    double getRadius() const { return this->radius; }
     bool getCollission() const { return this->collision; }
     std::vector<double> const getcurrentGravForce();
     p_state getCLStruct() const {
@@ -70,6 +77,7 @@ class Particle {
         st.pos = {this->position[0], this->position[1]};
         st.vel = {this->velocity[0], this->velocity[1]};
         st.mass = this->mass;
+        st.radius = this->radius;
         st.collision = this->collision;
         return st;
     };

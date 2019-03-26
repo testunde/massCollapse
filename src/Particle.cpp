@@ -16,6 +16,7 @@ vector<Particle *> *Particle::particleList = new vector<Particle *>{};
 
 Particle::Particle(double mass, double position[2], double velocity[2]) {
     this->mass = mass;
+    calcRadius();
     memcpy(this->position, position, 2 * sizeof(double));
     memcpy(this->positionPre, position, 2 * sizeof(double));
     memcpy(this->velocity, velocity, 2 * sizeof(double));
@@ -153,6 +154,11 @@ vector<double> const Particle::getcurrentGravForce() {
     return result;
 }
 
+double Particle::calcRadius() {
+    this->radius = pow(this->mass * radiusPreFactor, 1. / 3.);
+    return this->radius;
+}
+
 void Particle::setFixed(bool fixed) {
     this->fixed = fixed;
     if (fixed)
@@ -171,5 +177,6 @@ void Particle::setCLStruct(p_state *st) {
     this->velocity[1] = st->vel.y;
 
     this->mass = st->mass;
+    this->radius = st->radius;
     this->collision = st->collision;
 }
