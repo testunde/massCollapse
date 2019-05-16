@@ -21,6 +21,7 @@ typedef struct {
     cl_double mass;
     cl_double radius;
     cl_bool collision;
+    cl_int cluster_nr;
 } p_state;
 
 class Particle {
@@ -34,6 +35,7 @@ class Particle {
     double radius = 0.;               // [m]
     bool fixed = false;
     bool collision = false;
+    int cluster_nr = 0;
 
     static std::vector<double> accelByDistance(std::vector<double> distance,
                                                double mass);
@@ -55,7 +57,7 @@ class Particle {
   public:
     static std::vector<Particle *> *particleList;
 
-    Particle(double mass, double position[], double velocity[]);
+    Particle(double mass, double position[], double velocity[], int cluster_nr);
     virtual ~Particle();
 
     void updateVelocity();
@@ -79,6 +81,7 @@ class Particle {
         st.mass = this->mass;
         st.radius = this->radius;
         st.collision = this->collision;
+        st.cluster_nr = this->cluster_nr;
         return st;
     };
 

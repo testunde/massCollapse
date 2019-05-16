@@ -146,74 +146,95 @@ void generateParticles(const int form,
                        cl::Program &program, cl::Buffer *buffers[2]) {
     double maxVel = 0.;
     double tMmax = DBL_MIN, tMmin = DBL_MAX;
-    for (int c = 0; c < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; c++) {
-        // initial position by distribution and form
-        double tempCoord[2] = {0., 0.};
-        double theta, radius;
-        vector<double> tCoord;
-        switch (form) {
-        case 3: // spiral galaxy
-            getSpiralPoint(tempCoord, c, ENVIRONMENT_SPAWN_PARTICLES_TOTAL,
-                           rnd_gen);
-            break;
-        case 2: // concentrated ellipse
-            theta = getRandom() * 2. * M_PI;
-            radius = 1 - pow(cos(getRandom() * M_PI_2), 0.5);
-            radius = sqrt(radius) * .5;
-            tempCoord[0] = radius * ENVIRONMENT_SPAWN_WIDTH * cos(theta);
-            tempCoord[1] = radius * ENVIRONMENT_SPAWN_HEIGHT * sin(theta);
-            break;
-        case 1: // ellipse
-            theta = getRandom() * 2. * M_PI;
-            radius = getRandom();
-            radius = sqrt(radius) * .5;
-            tempCoord[0] = radius * ENVIRONMENT_SPAWN_WIDTH * cos(theta);
-            tempCoord[1] = radius * ENVIRONMENT_SPAWN_HEIGHT * sin(theta);
-            break;
-        case 0: // square
-        default:
-            tempCoord[0] = (getRandom() - .5) * ENVIRONMENT_SPAWN_WIDTH;
-            tempCoord[1] = (getRandom() - .5) * ENVIRONMENT_SPAWN_HEIGHT;
-            break;
+    double spawnPos[ENVIRONMENT_SPAWN_CLUSTER_COUNT][2];
+    if (ENVIRONMENT_SPAWN_CLUSTER_COUNT == 1) {
+        spawnPos[0][0] = 0.;
+        spawnPos[0][1] = 0.;
+    } else {
+        double radFactor = 2 * M_PI / ENVIRONMENT_SPAWN_CLUSTER_COUNT;
+        for (int s = 0; s < ENVIRONMENT_SPAWN_CLUSTER_COUNT; s++) {
+            spawnPos[s][0] =
+                sin(s * radFactor) * ENVIRONMENT_SPAWN_CLUSTER_DISTANCE;
+            spawnPos[s][1] =
+                cos(s * radFactor) * ENVIRONMENT_SPAWN_CLUSTER_DISTANCE;
         }
-        double coordNorm =
-            sqrt(tempCoord[0] * tempCoord[0] + tempCoord[1] * tempCoord[1]);
+    }
+    for (int s = 0; s < ENVIRONMENT_SPAWN_CLUSTER_COUNT; s++) {
+        for (int c = 0; c < ENVIRONMENT_SPAWN_PARTICLES_TOTAL /
+                                ENVIRONMENT_SPAWN_CLUSTER_COUNT;
+             c++) {
+            // initial position by distribution and form
+            double tempCoord[2] = {0., 0.};
+            double theta, radius;
+            vector<double> tCoord;
+            switch (form) {
+            case 3: // spiral galaxy
+                getSpiralPoint(tempCoord, c, ENVIRONMENT_SPAWN_PARTICLES_TOTAL,
+                               rnd_gen);
+                break;
+            case 2: // concentrated ellipse
+                theta = getRandom() * 2. * M_PI;
+                radius = 1 - pow(cos(getRandom() * M_PI_2), 0.5);
+                radius = sqrt(radius) * .5;
+                tempCoord[0] = radius * ENVIRONMENT_SPAWN_WIDTH * cos(theta);
+                tempCoord[1] = radius * ENVIRONMENT_SPAWN_HEIGHT * sin(theta);
+                break;
+            case 1: // ellipse
+                theta = getRandom() * 2. * M_PI;
+                radius = getRandom();
+                radius = sqrt(radius) * .5;
+                tempCoord[0] = radius * ENVIRONMENT_SPAWN_WIDTH * cos(theta);
+                tempCoord[1] = radius * ENVIRONMENT_SPAWN_HEIGHT * sin(theta);
+                break;
+            case 0: // square
+            default:
+                tempCoord[0] = (getRandom() - .5) * ENVIRONMENT_SPAWN_WIDTH;
+                tempCoord[1] = (getRandom() - .5) * ENVIRONMENT_SPAWN_HEIGHT;
+                break;
+            }
+            double coordNorm =
+                sqrt(tempCoord[0] * tempCoord[0] + tempCoord[1] * tempCoord[1]);
 
-        // initial velocity by function
-        double absVel = 0.;
-        switch (ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION) {
-        case 2: // RungeKutta5 (after all points are generated)
-            break;
-        case 1: // circular orbit sqrt(GM*radius)*2
-            absVel = sqrt(GRAVITAIONAL_CONSTANT *
-                          (ENVIRONMENT_SPAWN_PARTICLES_TOTAL *
-                           ENVIRONMENT_SPAWN_PARTICLE_MASS) *
-                          coordNorm) *
-                     2.;
-            break;
-        case 0: // plain angular function (alpha * radius)
-        default:
-            absVel = ENVIRONMENT_SPAWN_START_ANGULAR_VELO * coordNorm;
-            break;
+            // initial velocity by function
+            double absVel = 0.;
+            switch (ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION) {
+            case 2: // RungeKutta5 (after all points are generated)
+                break;
+            case 1: // circular orbit sqrt(GM*radius)*2
+                absVel = sqrt(GRAVITAIONAL_CONSTANT *
+                              (ENVIRONMENT_SPAWN_PARTICLES_TOTAL *
+                               ENVIRONMENT_SPAWN_PARTICLE_MASS) *
+                              coordNorm) *
+                         2.;
+                break;
+            case 0: // plain angular function (alpha * radius)
+            default:
+                absVel = ENVIRONMENT_SPAWN_START_ANGULAR_VELO * coordNorm;
+                break;
+            }
+            if (absVel > maxVel)
+                maxVel = absVel;
+
+            double tempVel[] = {absVel * (+tempCoord[1]) / coordNorm,
+                                absVel * (-tempCoord[0]) / coordNorm};
+            double tempMass = 0.;
+            while (abs(tempMass - ENVIRONMENT_SPAWN_PARTICLE_MASS) >
+                   ENVIRONMENT_SPAWN_PARTICLE_MASS_STD_2) {
+                tempMass = distributionMass(rnd_gen);
+            }
+
+            if (tempMass > tMmax)
+                tMmax = tempMass;
+            if (tempMass < tMmin)
+                tMmin = tempMass;
+
+            tempCoord[0] += spawnPos[s][0];
+            tempCoord[1] += spawnPos[s][1];
+
+            Particle *tempParticle =
+                new Particle(tempMass, tempCoord, tempVel, s);
+            Particle::particleList->push_back(tempParticle);
         }
-        if (absVel > maxVel)
-            maxVel = absVel;
-
-        double tempVel[] = {absVel * (+tempCoord[1]) / coordNorm,
-                            absVel * (-tempCoord[0]) / coordNorm};
-        double tempMass = 0.;
-        while (abs(tempMass - ENVIRONMENT_SPAWN_PARTICLE_MASS) >
-               ENVIRONMENT_SPAWN_PARTICLE_MASS_STD_2) {
-            tempMass = distributionMass(rnd_gen);
-        }
-
-        if (tempMass > tMmax)
-            tMmax = tempMass;
-        if (tempMass < tMmin)
-            tMmin = tempMass;
-
-        Particle *tempParticle = new Particle(tempMass, tempCoord, tempVel);
-        Particle::particleList->push_back(tempParticle);
     }
     printf("min mass: %.6e | max mass: %.6e [kg]\n", tMmin, tMmax);
 
@@ -330,12 +351,14 @@ int main(int, char **) {
                 "-DENVIRONMENT_SPAWN_PARTICLE_MASS=%lf "
                 "-DENVIRONMENT_SPAWN_START_ANGULAR_VELO=%lf "
                 "-DSIMULATION_TIME_PER_STEP=%lf -DSIMULATION_ROUNDS=%d "
-                "-DENVIRONMENT_SPAWN_PARTICLE_DENSITY=%lf",
+                "-DENVIRONMENT_SPAWN_PARTICLE_DENSITY=%lf "
+                "-DENVIRONMENT_SPAWN_CLUSTER_COUNT=%d",
                 ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION,
                 GRAVITAIONAL_CONSTANT, (long)ENVIRONMENT_SPAWN_PARTICLES_TOTAL,
                 ENVIRONMENT_SPAWN_PARTICLE_MASS,
                 ENVIRONMENT_SPAWN_START_ANGULAR_VELO, SIMULATION_TIME_PER_STEP,
-                SIMULATION_ROUNDS, ENVIRONMENT_SPAWN_PARTICLE_DENSITY))
+                SIMULATION_ROUNDS, ENVIRONMENT_SPAWN_PARTICLE_DENSITY,
+                ENVIRONMENT_SPAWN_CLUSTER_COUNT))
             throw runtime_error(
                 "Stack smash by passing macros to kernel! (buffer overflow)");
         program.build(devices, macros);

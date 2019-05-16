@@ -14,8 +14,10 @@ using namespace std;
 
 vector<Particle *> *Particle::particleList = new vector<Particle *>{};
 
-Particle::Particle(double mass, double position[2], double velocity[2]) {
+Particle::Particle(double mass, double position[2], double velocity[2],
+                   int cluster_nr) {
     this->mass = mass;
+    this->cluster_nr = cluster_nr;
     calcRadius();
     memcpy(this->position, position, 2 * sizeof(double));
     memcpy(this->positionPre, position, 2 * sizeof(double));
@@ -179,4 +181,5 @@ void Particle::setCLStruct(p_state *st) {
     this->mass = st->mass;
     this->radius = st->radius;
     this->collision = st->collision;
+    this->cluster_nr = st->cluster_nr;
 }

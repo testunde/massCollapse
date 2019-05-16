@@ -63,3 +63,4 @@ ninja format
 - ability to zoom OpenCV visualization while running
 - sum up distance vectors (weighted (center-of-) mass?) -> calculate only one time rk4
 - CSV/multilayer-TIFF save instead of video (and do visualization seperately)
+- simulate Dark Matter

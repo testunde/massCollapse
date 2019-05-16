@@ -21,7 +21,10 @@
     2 // 0: plain angular function (alpha * radius), 1: circular orbit
       // sqrt(GM*radius)*2, 2: RungeKutta5 (-> by grav. force)
 #define ENVIRONMENT_SPAWN_FORM                                                 \
-    2 // 0: square, 1: ellipse, 2: concentrated ellipse, 3: spiral galaxy
+    2 // 0: square, 1: ellipse, 2: X * concentrated ellipse, 3: spiral galaxy
+#define ENVIRONMENT_SPAWN_CLUSTER_COUNT 2
+#define ENVIRONMENT_SPAWN_CLUSTER_DISTANCE                                     \
+    2.5 // [m] dist. from center, if COUNT > 1
 
 #define GALAXY_SPIRAL_NUM 3
 #define GALAXY_SPIRAL_WIDTH 0.9 // [m]

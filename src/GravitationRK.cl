@@ -12,6 +12,7 @@ typedef struct {
     double mass;
     double radius;
     bool collision;
+    int cluster_nr;
 } p_state;
 
 __constant double radiusPreFactor =
@@ -70,9 +71,9 @@ __kernel void GravitationRK(__global p_state *statesIn,
             // output for consistency
 
             // (still doing the barrier syncs)
-            barrier(CLK_GLOBAL_MEM_FENCE); //  barrier to sync threads
-            barrier(CLK_GLOBAL_MEM_FENCE); //  barrier to sync threads
-            barrier(CLK_GLOBAL_MEM_FENCE); //  barrier to sync threads
+            barrier(CLK_GLOBAL_MEM_FENCE); // barrier to sync threads
+            barrier(CLK_GLOBAL_MEM_FENCE); // barrier to sync threads
+            barrier(CLK_GLOBAL_MEM_FENCE); // barrier to sync threads
 
             continue;
         }
@@ -85,7 +86,7 @@ __kernel void GravitationRK(__global p_state *statesIn,
         for (i = 0; i < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; i++) {
             // skip its own index || if 'i' was already involved in a collision
             // (thus doesn't exist anymore)
-            if (i == index || statesPointers[1][i].collision)
+            if (i == index || statesPointers[0][i].collision)
                 continue;
 
             double2 deltaR = statesPointers[0][i].pos - pos;
@@ -98,7 +99,7 @@ __kernel void GravitationRK(__global p_state *statesIn,
         statesPointers[1][index].vel = finalVel;
 
         // check for collisions
-        barrier(CLK_GLOBAL_MEM_FENCE); //  barrier to sync threads
+        barrier(CLK_GLOBAL_MEM_FENCE); // barrier to sync threads
         bool collision = false;
         p_state newState = statesPointers[1][index]; // already get old state
         for (i = 0; i < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; i++) {
@@ -137,7 +138,7 @@ __kernel void GravitationRK(__global p_state *statesIn,
                 }
             }
         }
-        barrier(CLK_GLOBAL_MEM_FENCE); //  barrier to sync threads
+        barrier(CLK_GLOBAL_MEM_FENCE); // barrier to sync threads
         if (collision) {
             statesPointers[1][index].collision = true;
 
@@ -152,13 +153,14 @@ __kernel void GravitationRK(__global p_state *statesIn,
         __global p_state *temp = statesPointers[0];
         statesPointers[0] = statesPointers[1];
         statesPointers[1] = temp;
-        barrier(CLK_GLOBAL_MEM_FENCE); //  barrier to sync threads
+        barrier(CLK_GLOBAL_MEM_FENCE); // barrier to sync threads
     }
 }
 
 __kernel void InitialVelocity(__global p_state *statesIn,
                               __global p_state *statesOut) {
     int index = get_global_id(0);
+    int cl = statesIn[index].cluster_nr;
 
     // for consistency, first copy all properties so unchanged ones are still
     // present in the output
@@ -169,20 +171,55 @@ __kernel void InitialVelocity(__global p_state *statesIn,
     if (ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION ==
         2) { // RungeKutta5 (after all points are generated)
         double2 gravAccel = {.0, .0};
+        double2 centerOfClusterMass[ENVIRONMENT_SPAWN_CLUSTER_COUNT];
+        double clusterMass[ENVIRONMENT_SPAWN_CLUSTER_COUNT];
+        int c;
+        for (c = 0; c < ENVIRONMENT_SPAWN_CLUSTER_COUNT; c++) {
+            centerOfClusterMass[c].x = 0.;
+            centerOfClusterMass[c].y = 0.;
+            clusterMass[c] = 0.;
+        }
         int i;
         for (i = 0; i < ENVIRONMENT_SPAWN_PARTICLES_TOTAL; i++) {
-            if (i == index)
+            clusterMass[statesIn[i].cluster_nr] += statesIn[i].mass;
+            centerOfClusterMass[statesIn[i].cluster_nr] +=
+                statesIn[i].mass * statesIn[i].pos;
+
+            if (i == index || statesIn[i].cluster_nr != cl)
                 continue;
 
             double2 deltaR = statesIn[i].pos - statesIn[index].pos;
 
             gravAccel += RungeKutta5(deltaR, statesIn[i].mass, 1.0);
         }
+        for (c = 0; c < ENVIRONMENT_SPAWN_CLUSTER_COUNT; c++)
+            centerOfClusterMass[c] /= clusterMass[c];
+        double coordNormCl =
+            length(statesIn[index].pos - centerOfClusterMass[cl]);
         double gravNorm = length(gravAccel);
-        double absVel = sqrt(coordNorm * gravNorm);
+        double absVel = sqrt(coordNormCl * gravNorm);
 
+        // calculate cluster base velocity
+        double2 gravAccelCl = {.0, .0};
+        for (c = 0; c < ENVIRONMENT_SPAWN_CLUSTER_COUNT; c++) {
+            if (c == cl)
+                continue;
+
+            double2 deltaRCl = centerOfClusterMass[c] - centerOfClusterMass[cl];
+
+            gravAccelCl += RungeKutta5(deltaRCl, clusterMass[c], 0.2);
+        }
+        double gravNormCl = length(gravAccelCl);
+        double absVelCl =
+            sqrt(length(centerOfClusterMass[statesIn[index].cluster_nr]) *
+                 gravNormCl);
+
+        // save to output states
         statesOut[index].vel.x = absVel * (-gravAccel.y) / gravNorm;
         statesOut[index].vel.y = absVel * (+gravAccel.x) / gravNorm;
+
+        statesOut[index].vel.x += absVelCl * (-gravAccelCl.y) / gravNormCl;
+        statesOut[index].vel.y += absVelCl * (+gravAccelCl.x) / gravNormCl;
     } else if (ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION ==
                1) { // circular orbit sqrt(GM*radius)*2
         double absVel = sqrt(GRAVITAIONAL_CONSTANT *
