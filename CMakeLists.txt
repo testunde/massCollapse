@@ -4,13 +4,11 @@ project(masscollapse VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/externals/sanitizers-cmake/cmake" ${CMAKE_MODULE_PATH})
 set(SRC src/Particle.cpp src/main.cpp)
 
-find_package(Sanitizers)
 
 # executable
 add_executable(masscollapse ${SRC})
 target_compile_features(masscollapse PRIVATE cxx_std_11)
 set_target_properties(masscollapse PROPERTIES POSITION_INDEPENDENT_CODE ON)
-add_sanitizers(masscollapse)
 
 # OpenCV
 find_package(OpenCV QUIET)

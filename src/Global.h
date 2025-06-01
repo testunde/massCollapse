@@ -24,19 +24,11 @@
 #define GALAXY_SPIRAL_NUM 5
 #define GALAXY_SPIRAL_WIDTH 0.1 // [m]
 
-#define SIMULATION_TIME_MAX 3600       // [s]
+#define SIMULATION_TIME_MAX 36       // [s]
 #define SIMULATION_TIME_PER_STEP 1.0   // [s]
 #define SIMULATION_TIME_STATS_UPDATE 1 // [simulation_time_per_step's]
 
 #define VISU_WIDTH_PX_PER_METER 800  // [px/m]
 #define VISU_HEIGHT_PX_PER_METER 800 // [px/m]
 
-#ifdef USE_OPENCV
-#define OPENCV_VIDEO_FILENAME "video.avi"
-#define OPENCV_VIDEO_FORMAT 'H', 'F', 'Y', 'U' // raw; as for .avi format
-#define OPENCV_VIDEO_SECONDS_PER_SECOND                                        \
-    60                       // [s/s] simulation seconds per video second (FPS)
-#define OPENCV_VIDEO_SCALE 1 // only positive int!
-#else
 #define OPENCV_VIDEO_SCALE 1 // don't change!
-#endif

@@ -14,13 +14,6 @@
 #include "Global.h"
 #include "Particle.h"
 
-#ifdef USE_OPENCV
-#include <opencv4/opencv2/opencv.hpp>
-#endif
-
-#ifdef USE_OPENMP
-#include <parallel/algorithm> // __gnu_parallel::for_each()
-#endif
 
 using namespace std;
 
@@ -39,24 +32,12 @@ long simplePowBase2(int e) {
 
 void update() {
     // velocity
-#ifdef USE_OPENMP
-    __gnu_parallel::for_each(Particle::particleList->begin(),
-                             Particle::particleList->end(),
-                             [&](Particle *p) { p->updateVelocity(); });
-#else
     for (Particle *p : *Particle::particleList)
         p->updateVelocity();
-#endif
 
     // position
-#ifdef USE_OPENMP
-    __gnu_parallel::for_each(Particle::particleList->begin(),
-                             Particle::particleList->end(),
-                             [&](Particle *p) { p->updatePosition(); });
-#else
     for (Particle *p : *Particle::particleList)
         p->updatePosition();
-#endif
 }
 
 void clearEnvironment() {
@@ -186,13 +167,7 @@ void generateParticles(const int form,
     printf("min mass: %f | max mass: %f [kg]\n", tMmin, tMmax);
 
     if (ENVIRONMENT_SPAWN_FUNCTIONAL_ANGULAR_VELO_FUNCTION == 2) { // RK5
-#ifdef USE_OPENMP
-        __gnu_parallel::for_each(
-            Particle::particleList->begin(), Particle::particleList->end(),
-            [&](Particle *p) {
-#else
         for (Particle *p : *Particle::particleList) {
-#endif
                 vector<double> gravForce = p->getcurrentGravForce();
                 // assuming force points to center, since average position of
                 // generated particles should be the center
@@ -211,11 +186,7 @@ void generateParticles(const int form,
                                           absVel * (+gravForce[0]) / fNorm};
 
                 p->setVelocity(tempVel);
-#ifdef USE_OPENMP
-            });
-#else
         }
-#endif
     }
     printf("max velocity: %f [m/s]\n", maxVel);
 }
@@ -229,9 +200,6 @@ int main(int, char **) {
     default_random_engine rnd_gen;
     rnd_gen.seed(rndSeed);
 
-#ifdef USE_OPENMP
-    printf("Using parallelisation by OpenMP.\n");
-#endif
 
     // initialize environment
     printf("Initialize environment + generate particles...\n");
@@ -244,15 +212,6 @@ int main(int, char **) {
     // init openCV
     int visu_width = ENVIRONMENT_WIDTH * VISU_WIDTH_PX_PER_METER;
     int visu_height = ENVIRONMENT_HEIGHT * VISU_HEIGHT_PX_PER_METER;
-#ifdef USE_OPENCV
-    cv::namedWindow("env_simu", cv::WINDOW_AUTOSIZE);
-    cv::Mat envVisu(visu_height, visu_width, CV_8UC3);
-    cv::VideoWriter video(
-        OPENCV_VIDEO_FILENAME, cv::VideoWriter::fourcc(OPENCV_VIDEO_FORMAT),
-        OPENCV_VIDEO_SECONDS_PER_SECOND, cv::Size(visu_width, visu_height));
-    visu_width /= OPENCV_VIDEO_SCALE;
-    visu_height /= OPENCV_VIDEO_SCALE;
-#endif
 
     // simulation start
     double meanTotalMassPerPx = ENVIRONMENT_SPAWN_PARTICLE_MASS *
@@ -281,68 +240,23 @@ int main(int, char **) {
             }
             // visualization
             double avgColor = 0.;
-#ifdef USE_OPENCV
-            envVisu.setTo(cv::Scalar(0, 0, 0));
-            for (int w = 0; w < visu_width; w++) {
-                for (int h = 0; h < visu_height; h++) {
-                    double totalMassRatio =
-                        total_mass[w][h] / meanTotalMassPerPx;
-                    // totalMassRatio =
-                    //    (log10(totalMassRatio + 0.1) + 1) / (log10(1.1)
-                    //    + 1);
-                    int colorTotalMass =
-                        min(255, (int)(.68 * 255. * totalMassRatio));
-                    int colorMass =
-                        (int)(255. *
-                              (1. - ENVIRONMENT_SPAWN_PARTICLE_MASS /
-                                        (total_mass[w][h] +
-                                         ENVIRONMENT_SPAWN_PARTICLE_MASS)));
 
-                    int cP = count_particle[w][h];
-                    int colorCountParticle =
-                        (int)(255. * ((double)cP) /
-                              (double)Particle::particleList->size());
-
-                    int colorCountParticle2 =
-                        (cP > 0)
-                            ? (int)(255. *
-                                    (1. -
-                                     1. / (1. * (double)simplePowBase2(cP))))
-                            : 0;
-
-                    cv::Vec3b finalColor(0, colorCountParticle2, colorMass);
-                    for (int ww = 0; ww < OPENCV_VIDEO_SCALE; ww++)
-                        for (int hh = 0; hh < OPENCV_VIDEO_SCALE; hh++)
-                            envVisu.at<cv::Vec3b>(h * OPENCV_VIDEO_SCALE + hh,
-                                                  w * OPENCV_VIDEO_SCALE + ww) =
-                                finalColor;
-                    avgColor +=
-                        (finalColor[0] + finalColor[1] + finalColor[2]) / 3.;
-                }
+            if (t > 0) {
+                long currentTimeStamp = currentMicroSec();
+                long eta_seconds =
+                    (long)(((SIMULATION_TIME_MAX / SIMULATION_TIME_PER_STEP) -
+                            (long)t) *
+                           (currentTimeStamp - startTimeStamp) / (1E6L * (long)t));
+                printf("time: %f [s] | avgColor: %f [0-256[ (ETA: %ldm %lds)\r",
+                       ((float)t) * SIMULATION_TIME_PER_STEP, avgColor,
+                       eta_seconds / 60, eta_seconds % 60);
+                fflush(stdout);
             }
-            avgColor /= visu_width * visu_height;
-
-            video.write(envVisu);
-            cv::imshow("env_simu", envVisu);
-            if (cv::waitKey(30) >= 0)
-                break;
-#endif
-
-            long currentTimeStamp = currentMicroSec();
-            long eta_seconds =
-                (long)(((SIMULATION_TIME_MAX / SIMULATION_TIME_PER_STEP) -
-                        (long)t) *
-                       (currentTimeStamp - startTimeStamp) / (1E6L * (long)t));
-            printf("time: %f [s] | avgColor: %f [0-256[ (ETA: %ldm %lds)\n",
-                   ((float)t) * SIMULATION_TIME_PER_STEP, avgColor,
-                   eta_seconds / 60, eta_seconds % 60);
-            fflush(stdout);
         }
     }
+    long endTimeStamp = currentMicroSec();
+    printf("\nTook %f seconds to run.\n", ((float) (endTimeStamp - startTimeStamp)) / 1.0E6f);
 
     // clear simulation environment
-#ifdef USE_OPENCV
-    video.release();
-#endif
     clearEnvironment();
 }
